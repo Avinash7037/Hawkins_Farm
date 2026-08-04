@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const cloudinary = require("../config/cloudinary");
 const Product = require("../models/productModel");
 
 const createProduct = async (req, res) => {
@@ -29,11 +30,13 @@ const createProduct = async (req, res) => {
     });
 
     res.status(201).json({
+      success: true,
       message: "Product Added Successfully",
       product,
     });
   } catch (error) {
     res.status(500).json({
+      success: false,
       message: error.message,
     });
   }
@@ -72,7 +75,7 @@ const getProducts = async (req, res) => {
       query.location = location;
     }
 
-    // Price
+    // Price Filter
     if (minPrice || maxPrice) {
       query.price = {};
 
@@ -83,22 +86,13 @@ const getProducts = async (req, res) => {
     // Sorting
     let sortOption = { createdAt: -1 };
 
-    if (sort === "oldest") {
-      sortOption = { createdAt: 1 };
-    }
-
-    if (sort === "priceLow") {
-      sortOption = { price: 1 };
-    }
-
-    if (sort === "priceHigh") {
-      sortOption = { price: -1 };
-    }
+    if (sort === "oldest") sortOption = { createdAt: 1 };
+    if (sort === "priceLow") sortOption = { price: 1 };
+    if (sort === "priceHigh") sortOption = { price: -1 };
 
     // Pagination
     const currentPage = Number(page);
     const pageSize = Number(limit);
-
     const skip = (currentPage - 1) * pageSize;
 
     const totalProducts = await Product.countDocuments(query);
@@ -129,7 +123,6 @@ const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if ObjectId is valid
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -174,7 +167,6 @@ const updateProduct = async (req, res) => {
       });
     }
 
-    // Check ownership
     if (product.farmer.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
@@ -213,7 +205,6 @@ const deleteProduct = async (req, res) => {
       });
     }
 
-    // Check ownership
     if (product.farmer.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
@@ -221,11 +212,18 @@ const deleteProduct = async (req, res) => {
       });
     }
 
+    // Delete all images from Cloudinary
+    if (product.images && product.images.length > 0) {
+      for (const image of product.images) {
+        await cloudinary.uploader.destroy(image.public_id);
+      }
+    }
+
     await product.deleteOne();
 
     res.status(200).json({
       success: true,
-      message: "Product deleted successfully",
+      message: "Product and images deleted successfully",
     });
   } catch (error) {
     res.status(500).json({

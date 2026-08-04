@@ -13,6 +13,7 @@ const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 // Middleware
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
@@ -38,6 +39,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // 404 Middleware
 app.use(notFound);
