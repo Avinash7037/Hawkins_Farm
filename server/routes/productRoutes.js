@@ -5,10 +5,14 @@ const router = express.Router();
 const {
   createProduct,
   getProducts,
+  getProductById,
+  updateProduct,
 } = require("../controllers/productController");
 
 const { protect, authorize } = require("../middleware/authMiddleware");
 router.get("/", getProducts);
+router.get("/:id", getProductById);
 router.post("/", protect, authorize("farmer"), createProduct);
+router.put("/:id", protect, authorize("farmer"), updateProduct);
 
 module.exports = router;
