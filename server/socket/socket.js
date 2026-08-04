@@ -1,11 +1,31 @@
 const Chat = require("../models/chatModel");
 
+const onlineUsers = new Map();
+
 const initializeSocket = (io) => {
   io.on("connection", (socket) => {
-    console.log("User Connected:", socket.id);
+    console.log("Connected:", socket.id);
 
     socket.on("join", (userId) => {
-      socket.join(userId);
+      onlineUsers.set(userId, socket.id);
+
+      io.emit("onlineUsers", [...onlineUsers.keys()]);
+    });
+
+    socket.on("typing", (receiverId) => {
+      const receiverSocket = onlineUsers.get(receiverId);
+
+      if (receiverSocket) {
+        io.to(receiverSocket).emit("typing");
+      }
+    });
+
+    socket.on("stopTyping", (receiverId) => {
+      const receiverSocket = onlineUsers.get(receiverId);
+
+      if (receiverSocket) {
+        io.to(receiverSocket).emit("stopTyping");
+      }
     });
 
     socket.on("sendMessage", async (data) => {
@@ -15,13 +35,25 @@ const initializeSocket = (io) => {
         message: data.message,
       });
 
-      io.to(data.receiver).emit("receiveMessage", chat);
+      const receiverSocket = onlineUsers.get(data.receiver);
 
-      io.to(data.sender).emit("receiveMessage", chat);
+      if (receiverSocket) {
+        io.to(receiverSocket).emit("receiveMessage", chat);
+      }
+
+      socket.emit("receiveMessage", chat);
     });
 
     socket.on("disconnect", () => {
-      console.log("User Disconnected");
+      for (const [userId, socketId] of onlineUsers.entries()) {
+        if (socketId === socket.id) {
+          onlineUsers.delete(userId);
+        }
+      }
+
+      io.emit("onlineUsers", [...onlineUsers.keys()]);
+
+      console.log("Disconnected:", socket.id);
     });
   });
 };

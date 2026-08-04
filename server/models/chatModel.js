@@ -24,6 +24,10 @@ const chatSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    readAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
