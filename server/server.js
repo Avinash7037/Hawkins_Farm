@@ -15,6 +15,7 @@ const reviewRoutes = require("./routes/reviewRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
 // Middleware
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
@@ -42,6 +43,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/chat", chatRoutes);
 
 // 404 Middleware
 app.use(notFound);
@@ -52,6 +54,20 @@ app.use(errorHandler);
 // Start Server
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+const http = require("http");
+const { Server } = require("socket.io");
+const initializeSocket = require("./socket/socket");
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
+
+initializeSocket(io);
+
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
