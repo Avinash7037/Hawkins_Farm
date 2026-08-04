@@ -16,6 +16,7 @@ const uploadRoutes = require("./routes/uploadRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const qrRoutes = require("./routes/qrRoutes");
 
 // Middleware
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
@@ -44,6 +45,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/qr", qrRoutes);
 
 // 404 Middleware
 app.use(notFound);

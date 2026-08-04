@@ -1,5 +1,7 @@
 const Order = require("../models/orderModel");
 const Cart = require("../models/cartModel");
+const User = require("../models/userModel");
+const sendEmail = require("../utils/sendEmail");
 
 const placeOrder = async (req, res) => {
   try {
@@ -32,9 +34,28 @@ const placeOrder = async (req, res) => {
       orders.push(order);
     }
 
+    // Clear cart after placing order
     await Cart.deleteMany({
       buyer: req.user._id,
     });
+
+    // Send order confirmation email
+    const buyer = await User.findById(req.user._id);
+
+    if (buyer) {
+      await sendEmail({
+        to: buyer.email,
+        subject: "Order Placed Successfully - Hawkins Farm",
+        html: `
+          <h2>Hello ${buyer.name},</h2>
+          <p>Your order has been placed successfully.</p>
+          <p><strong>Total Items:</strong> ${orders.length}</p>
+          <p>We'll notify you whenever the farmer updates your order status.</p>
+          <br>
+          <p>Thank you for shopping with <strong>Hawkins Farm</strong>.</p>
+        `,
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -48,6 +69,7 @@ const placeOrder = async (req, res) => {
     });
   }
 };
+
 const getBuyerOrders = async (req, res) => {
   try {
     const orders = await Order.find({
@@ -158,6 +180,24 @@ const updateOrderStatus = async (req, res) => {
     order.orderStatus = orderStatus;
 
     await order.save();
+
+    // Send order status update email
+    const buyer = await User.findById(order.buyer);
+
+    if (buyer) {
+      await sendEmail({
+        to: buyer.email,
+        subject: "Order Status Updated - Hawkins Farm",
+        html: `
+          <h2>Hello ${buyer.name},</h2>
+          <p>Your order status has been updated.</p>
+
+          <h3>Current Status: ${order.orderStatus}</h3>
+
+          <p>Thank you for shopping with Hawkins Farm.</p>
+        `,
+      });
+    }
 
     res.status(200).json({
       success: true,
