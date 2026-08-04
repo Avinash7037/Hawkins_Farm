@@ -1,80 +1,69 @@
 const User = require("../models/userModel");
 const bcrypt = require("bcryptjs");
 const generateToken = require("../utils/generateToken");
+const asyncHandler = require("express-async-handler");
 
-const registerUser = async (req, res) => {
-  try {
-    const { name, email, password, role } = req.body;
+const registerUser = asyncHandler(async (req, res) => {
+  const { name, email, password, role } = req.body;
 
-    const userExists = await User.findOne({ email });
+  const userExists = await User.findOne({ email });
 
-    if (userExists) {
-      return res.status(400).json({
-        message: "User already exists",
-      });
-    }
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      role,
-    });
-
-    res.status(201).json({
-      message: "User Registered Successfully",
-      user,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
+  if (userExists) {
+    res.status(400);
+    throw new Error("User already exists");
   }
-};
 
-const loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Check user exists
-    const user = await User.findOne({ email });
+  const user = await User.create({
+    name,
+    email,
+    password: hashedPassword,
+    role,
+  });
 
-    if (!user) {
-      return res.status(400).json({
-        message: "Invalid Email or Password",
-      });
-    }
+  res.status(201).json({
+    success: true,
+    message: "User Registered Successfully",
+    user: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
+});
 
-    // Compare passwords
-    const isMatch = await bcrypt.compare(password, user.password);
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-    if (!isMatch) {
-      return res.status(400).json({
-        message: "Invalid Email or Password",
-      });
-    }
+  const user = await User.findOne({ email });
 
-    res.status(200).json({
-      message: "Login Successful",
-      token: generateToken(user._id),
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
+  if (!user) {
+    res.status(401);
+    throw new Error("Invalid email or password");
   }
-};
+
+  const isMatch = await bcrypt.compare(password, user.password);
+
+  if (!isMatch) {
+    res.status(401);
+    throw new Error("Invalid email or password");
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Login Successful",
+    token: generateToken(user._id),
+    user: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
+});
 
 const getProfile = async (req, res) => {
   res.json({
