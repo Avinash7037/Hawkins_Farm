@@ -1,5 +1,7 @@
 const Product = require("../models/productModel");
 const Order = require("../models/orderModel");
+const User = require("../models/userModel");
+const Review = require("../models/reviewModel");
 
 const getFarmerDashboard = async (req, res) => {
   try {
@@ -67,6 +69,54 @@ const getFarmerDashboard = async (req, res) => {
   }
 };
 
+const getAdminDashboard = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+
+    const totalFarmers = await User.countDocuments({
+      role: "farmer",
+    });
+
+    const totalBuyers = await User.countDocuments({
+      role: "buyer",
+    });
+
+    const totalProducts = await Product.countDocuments();
+
+    const totalOrders = await Order.countDocuments();
+
+    const totalReviews = await Review.countDocuments();
+
+    const deliveredOrders = await Order.find({
+      orderStatus: "Delivered",
+    });
+
+    const totalRevenue = deliveredOrders.reduce(
+      (sum, order) => sum + order.totalPrice,
+      0,
+    );
+
+    res.status(200).json({
+      success: true,
+      dashboard: {
+        totalUsers,
+        totalFarmers,
+        totalBuyers,
+        totalProducts,
+        totalOrders,
+        totalReviews,
+        totalRevenue,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   getFarmerDashboard,
+  getAdminDashboard,
 };
