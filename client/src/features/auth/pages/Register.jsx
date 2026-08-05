@@ -1,8 +1,14 @@
+import AuthLayout from "../components/AuthLayout";
+import RegisterForm from "../components/RegisterForm";
+
 function Register() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-4xl font-bold">Register Page</h1>
-    </div>
+    <AuthLayout
+      title="Create Account"
+      subtitle="Join Hawkins Farm and connect with fresh farm products."
+    >
+      <RegisterForm />
+    </AuthLayout>
   );
 }
 
