@@ -10,6 +10,7 @@ import BuyerDashboard from "../features/buyer/pages/BuyerDashboard";
 import FarmerDashboard from "../features/farmer/pages/FarmerDashboard";
 import AdminDashboard from "../features/admin/pages/AdminDashboard";
 import NotFound from "../features/notFound/pages/NotFound";
+import ProductDetails from "../features/marketplace/pages/ProductDetails";
 
 function AppRoutes() {
   return (
@@ -17,6 +18,7 @@ function AppRoutes() {
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<Marketplace />} />
+        <Route path="/products/:id" element={<ProductDetails />} />
       </Route>
 
       <Route path="/login" element={<Login />} />
