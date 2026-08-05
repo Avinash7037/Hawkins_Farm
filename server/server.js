@@ -1,10 +1,23 @@
 const express = require("express");
 const dotenv = require("dotenv");
+const http = require("http");
+const { Server } = require("socket.io");
 
-// Load environment variables FIRST
+// Load environment variables
 dotenv.config();
 
+// Config
+const validateEnv = require("./config/validateEnv");
 const connectDB = require("./config/db");
+
+// Validate .env
+validateEnv();
+
+// Security Middleware
+const securityMiddleware = require("./middleware/securityMiddleware");
+
+// Socket
+const initializeSocket = require("./socket/socket");
 
 // Routes
 const userRoutes = require("./routes/userRoutes");
@@ -18,7 +31,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const qrRoutes = require("./routes/qrRoutes");
 
-// Middleware
+// Error Middleware
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 const app = express();
@@ -26,13 +39,16 @@ const app = express();
 // Connect Database
 connectDB();
 
-// Body Parser Middleware
+// Security Middleware
+securityMiddleware(app);
+
+// Body Parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Home Route
 app.get("/", (req, res) => {
-  res.send("Hawkins Farm API Running");
+  res.send("Hawkins Farm API Running 🚜");
 });
 
 // API Routes
@@ -53,23 +69,22 @@ app.use(notFound);
 // Global Error Handler
 app.use(errorHandler);
 
-// Start Server
-const PORT = process.env.PORT || 5000;
-
-const http = require("http");
-const { Server } = require("socket.io");
-const initializeSocket = require("./socket/socket");
-
+// Create HTTP Server
 const server = http.createServer(app);
 
+// Initialize Socket.IO
 const io = new Server(server, {
   cors: {
     origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
   },
 });
 
 initializeSocket(io);
 
+// Start Server
+const PORT = process.env.PORT || 5000;
+
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
