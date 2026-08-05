@@ -1,8 +1,14 @@
+import AuthLayout from "../components/AuthLayout";
+import LoginForm from "../components/LoginForm";
+
 function Login() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-4xl font-bold">Login Page</h1>
-    </div>
+    <AuthLayout
+      title="Welcome Back"
+      subtitle="Sign in to continue shopping fresh farm products."
+    >
+      <LoginForm />
+    </AuthLayout>
   );
 }
 

@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { login, register, fetchProfile } from "./authThunks";
 
 const storedUser = localStorage.getItem("user");
 const storedToken = localStorage.getItem("token");
@@ -16,36 +17,67 @@ const authSlice = createSlice({
   initialState,
 
   reducers: {
-    loginStart: (state) => {
-      state.loading = true;
-      state.error = null;
-    },
-
-    loginSuccess: (state, action) => {
-      state.loading = false;
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-
-      localStorage.setItem("user", JSON.stringify(action.payload.user));
-      localStorage.setItem("token", action.payload.token);
-    },
-
-    loginFailure: (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    },
-
     logout: (state) => {
       state.user = null;
       state.token = null;
+      state.loading = false;
+      state.error = null;
 
       localStorage.removeItem("user");
       localStorage.removeItem("token");
     },
+
+    clearError: (state) => {
+      state.error = null;
+    },
+  },
+
+  extraReducers: (builder) => {
+    builder
+
+      // LOGIN
+      .addCase(login.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+
+      .addCase(login.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+
+        localStorage.setItem("user", JSON.stringify(action.payload.user));
+
+        localStorage.setItem("token", action.payload.token);
+      })
+
+      .addCase(login.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // REGISTER
+      .addCase(register.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+
+      .addCase(register.fulfilled, (state) => {
+        state.loading = false;
+      })
+
+      .addCase(register.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // PROFILE
+      .addCase(fetchProfile.fulfilled, (state, action) => {
+        state.user = action.payload.user;
+      });
   },
 });
 
-export const { loginStart, loginSuccess, loginFailure, logout } =
-  authSlice.actions;
+export const { logout, clearError } = authSlice.actions;
 
 export default authSlice.reducer;
