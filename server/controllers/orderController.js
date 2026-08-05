@@ -1,69 +1,25 @@
 const Order = require("../models/orderModel");
-const Cart = require("../models/cartModel");
-const User = require("../models/userModel");
-const sendEmail = require("../utils/sendEmail");
+const { createOrdersFromCart } = require("../services/orderService");
 
 const placeOrder = async (req, res) => {
   try {
     const { deliveryAddress, paymentMethod } = req.body;
 
-    const cartItems = await Cart.find({
-      buyer: req.user._id,
-    }).populate("product");
-
-    if (cartItems.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Your cart is empty",
-      });
-    }
-
-    const orders = [];
-
-    for (const item of cartItems) {
-      const order = await Order.create({
-        buyer: req.user._id,
-        farmer: item.product.farmer,
-        product: item.product._id,
-        quantity: item.quantity,
-        totalPrice: item.product.price * item.quantity,
-        deliveryAddress,
-        paymentMethod,
-      });
-
-      orders.push(order);
-    }
-
-    // Clear cart after placing order
-    await Cart.deleteMany({
-      buyer: req.user._id,
+    const orders = await createOrdersFromCart({
+      buyerId: req.user._id,
+      deliveryAddress,
+      paymentMethod,
     });
-
-    // Send order confirmation email
-    const buyer = await User.findById(req.user._id);
-
-    if (buyer) {
-      await sendEmail({
-        to: buyer.email,
-        subject: "Order Placed Successfully - Hawkins Farm",
-        html: `
-          <h2>Hello ${buyer.name},</h2>
-          <p>Your order has been placed successfully.</p>
-          <p><strong>Total Items:</strong> ${orders.length}</p>
-          <p>We'll notify you whenever the farmer updates your order status.</p>
-          <br>
-          <p>Thank you for shopping with <strong>Hawkins Farm</strong>.</p>
-        `,
-      });
-    }
 
     res.status(201).json({
       success: true,
-      message: "Order placed successfully",
+      message: "Orders created successfully",
       orders,
     });
   } catch (error) {
-    res.status(500).json({
+    const statusCode = error.message === "Your cart is empty" ? 400 : 500;
+
+    res.status(statusCode).json({
       success: false,
       message: error.message,
     });

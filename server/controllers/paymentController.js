@@ -5,6 +5,9 @@ const Order = require("../models/orderModel");
 const User = require("../models/userModel");
 const sendEmail = require("../utils/sendEmail");
 
+// Will be used after the checkout refactor
+const { completeCheckout } = require("../services/checkoutService");
+
 const createPaymentOrder = async (req, res) => {
   try {
     const { orderId } = req.body;
@@ -27,7 +30,7 @@ const createPaymentOrder = async (req, res) => {
     }
 
     const options = {
-      amount: order.totalPrice * 100, // Convert ₹ to paise
+      amount: order.totalPrice * 100,
       currency: "INR",
       receipt: order._id.toString(),
     };

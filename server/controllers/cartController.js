@@ -3,7 +3,16 @@ const Product = require("../models/productModel");
 
 const addToCart = async (req, res) => {
   try {
-    const { productId, quantity } = req.body;
+    const { productId } = req.body;
+
+    const quantity = Number(req.body.quantity) || 1;
+
+    if (quantity < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Quantity must be at least 1",
+      });
+    }
 
     const product = await Product.findById(productId);
 
@@ -100,7 +109,16 @@ const updateCartQuantity = async (req, res) => {
       });
     }
 
-    cart.quantity = req.body.quantity;
+    const quantity = Number(req.body.quantity);
+
+    if (quantity < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Quantity must be at least 1",
+      });
+    }
+
+    cart.quantity = quantity;
 
     await cart.save();
 
