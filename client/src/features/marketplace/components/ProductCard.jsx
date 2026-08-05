@@ -1,62 +1,63 @@
 import { Link } from "react-router-dom";
-import { MapPin, IndianRupee, User } from "lucide-react";
+import { MapPin, Package } from "lucide-react";
 
 function ProductCard({ product }) {
+  const image =
+    product.images?.[0]?.url || "https://placehold.co/600x400?text=No+Image";
+
   return (
-    <div className="group overflow-hidden rounded-3xl bg-white shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
-      {/* Product Image */}
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+      <img
+        src={image}
+        alt={product.name}
+        className="h-56 w-full object-cover"
+      />
 
-      <div className="h-56 overflow-hidden">
-        <img
-          src={
-            product.images?.[0] || "https://placehold.co/600x400?text=No+Image"
-          }
-          alt={product.name}
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
-        />
-      </div>
+      <div className="space-y-4 p-5">
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900">
+            {product.name}
+          </h3>
 
-      {/* Product Details */}
-
-      <div className="p-6">
-        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-          {product.category}
-        </span>
-
-        <h3 className="mt-4 line-clamp-1 text-xl font-bold text-gray-900">
-          {product.name}
-        </h3>
-
-        <div className="mt-4 flex items-center gap-2 text-gray-500">
-          <MapPin size={18} />
-          <span>{product.location}</span>
+          <p className="mt-2 line-clamp-2 text-sm text-gray-500">
+            {product.description}
+          </p>
         </div>
 
-        <div className="mt-2 flex items-center gap-2 text-gray-500">
-          <User size={18} />
-          <span>{product.farmer?.name || "Farmer"}</span>
-        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-2xl font-bold text-emerald-600">
+            ₹{product.price}
+          </span>
 
-        <div className="mt-5 flex items-center justify-between">
-          <div className="flex items-center text-2xl font-bold text-emerald-600">
-            <IndianRupee size={22} />
-            {product.price}
-            <span className="ml-1 text-sm font-normal text-gray-500">
-              / {product.unit}
-            </span>
-          </div>
-
-          <span className="rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-700">
-            {product.freshness}
+          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+            {product.category}
           </span>
         </div>
 
-        <Link
-          to={`/products/${product._id}`}
-          className="mt-6 block rounded-xl bg-emerald-600 py-3 text-center font-semibold text-white transition hover:bg-emerald-700"
-        >
-          View Details
-        </Link>
+        <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center gap-1">
+            <Package size={16} />
+            {product.quantity} {product.unit}
+          </div>
+
+          <div className="flex items-center gap-1">
+            <MapPin size={16} />
+            {product.location}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="rounded-lg bg-yellow-100 px-3 py-1 text-sm text-yellow-700">
+            {product.freshness}
+          </span>
+
+          <Link
+            to={`/products/${product._id}`}
+            className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+          >
+            View Details
+          </Link>
+        </div>
       </div>
     </div>
   );
