@@ -1,33 +1,31 @@
 function Button({
-  text,
+  children,
   type = "button",
-  onClick,
   loading = false,
   className = "",
-  fullWidth = true,
+  ...props
 }) {
   return (
     <button
       type={type}
-      onClick={onClick}
       disabled={loading}
       className={`
-        ${fullWidth ? "w-full" : ""}
-        bg-green-600
-        hover:bg-green-700
-        text-white
-        font-semibold
-        py-3
-        px-6
+        w-full
         rounded-xl
-        transition-all
-        duration-300
-        disabled:opacity-70
+        bg-emerald-600
+        px-6
+        py-3
+        font-semibold
+        text-white
+        transition
+        hover:bg-emerald-700
         disabled:cursor-not-allowed
+        disabled:opacity-70
         ${className}
       `}
+      {...props}
     >
-      {loading ? "Please wait..." : text}
+      {loading ? "Please wait..." : children}
     </button>
   );
 }
