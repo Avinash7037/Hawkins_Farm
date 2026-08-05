@@ -1,59 +1,45 @@
+import { useState } from "react";
+import { Menu } from "lucide-react";
+
+import Logo from "../common/Logo";
+import NavLinks from "./NavLinks";
+import MobileMenu from "./MobileMenu";
 import { Link } from "react-router-dom";
-import { Leaf } from "lucide-react";
 
 function Navbar() {
+  const [open, setOpen] = useState(false);
+
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
+    <header className="sticky top-0 z-50 backdrop-blur-lg bg-white/80 border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <Leaf className="text-emerald-600" size={30} />
-            <span className="text-2xl font-bold text-gray-800">
-              Hawkins Farm
-            </span>
-          </Link>
+        <div className="h-20 flex items-center justify-between">
+          <Logo />
 
-          {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link
-              to="/"
-              className="text-gray-700 hover:text-emerald-600 transition"
-            >
-              Home
-            </Link>
-
-            <Link
-              to="/products"
-              className="text-gray-700 hover:text-emerald-600 transition"
-            >
-              Marketplace
-            </Link>
+            <NavLinks />
 
             <Link
               to="/login"
-              className="text-gray-700 hover:text-emerald-600 transition"
+              className="font-medium text-gray-700 hover:text-emerald-600 transition"
             >
               Login
             </Link>
 
             <Link
               to="/register"
-              className="
-                bg-emerald-600
-                text-white
-                px-5
-                py-2
-                rounded-xl
-                hover:bg-emerald-700
-                transition
-              "
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-semibold transition"
             >
-              Register
+              Get Started
             </Link>
           </nav>
+
+          <button className="md:hidden" onClick={() => setOpen(!open)}>
+            <Menu size={28} />
+          </button>
         </div>
       </div>
+
+      <MobileMenu open={open} setOpen={setOpen} />
     </header>
   );
 }
