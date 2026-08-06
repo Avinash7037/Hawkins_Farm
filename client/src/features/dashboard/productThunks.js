@@ -13,3 +13,32 @@ export const fetchFarmerProducts = createAsyncThunk(
     }
   },
 );
+
+import { updateProduct, deleteProduct } from "./productService";
+
+export const editFarmerProduct = createAsyncThunk(
+  "dashboard/editFarmerProduct",
+  async ({ id, data }, thunkAPI) => {
+    try {
+      return await updateProduct({ id, data });
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || "Failed to update product",
+      );
+    }
+  },
+);
+
+export const removeFarmerProduct = createAsyncThunk(
+  "dashboard/removeFarmerProduct",
+  async (id, thunkAPI) => {
+    try {
+      await deleteProduct(id);
+      return id;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || "Failed to delete product",
+      );
+    }
+  },
+);

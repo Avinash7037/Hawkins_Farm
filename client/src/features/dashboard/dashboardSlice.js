@@ -1,6 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { fetchFarmerDashboard } from "./dashboardThunks";
-import { fetchFarmerProducts } from "./productThunks";
+import {
+  fetchFarmerProducts,
+  editFarmerProduct,
+  removeFarmerProduct,
+} from "./productThunks";
 
 const initialState = {
   dashboard: null,
@@ -32,6 +36,20 @@ const dashboardSlice = createSlice({
       })
       .addCase(fetchFarmerProducts.fulfilled, (state, action) => {
         state.products = action.payload.products;
+      })
+
+      .addCase(editFarmerProduct.fulfilled, (state, action) => {
+        const index = state.products.findIndex(
+          (p) => p._id === action.payload.product._id,
+        );
+
+        if (index !== -1) {
+          state.products[index] = action.payload.product;
+        }
+      })
+
+      .addCase(removeFarmerProduct.fulfilled, (state, action) => {
+        state.products = state.products.filter((p) => p._id !== action.payload);
       });
   },
 });

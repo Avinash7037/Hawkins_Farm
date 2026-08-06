@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import { fetchFarmerProducts } from "../productThunks";
+import EditProductModal from "../components/EditProductModal";
+
+import {
+  fetchFarmerProducts,
+  editFarmerProduct,
+  removeFarmerProduct,
+} from "../productThunks";
 
 function Products() {
   const dispatch = useDispatch();
@@ -9,6 +15,8 @@ function Products() {
   const { products, loading } = useSelector((state) => state.dashboard);
 
   const [search, setSearch] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [openModal, setOpenModal] = useState(false);
 
   useEffect(() => {
     dispatch(fetchFarmerProducts());
@@ -19,12 +27,41 @@ function Products() {
       product.name.toLowerCase().includes(search.toLowerCase()),
     ) || [];
 
+  const handleEdit = (product) => {
+    setSelectedProduct(product);
+    setOpenModal(true);
+  };
+
+  const handleDelete = (id) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this product?",
+    );
+
+    if (!confirmed) return;
+
+    dispatch(removeFarmerProduct(id));
+  };
+
+  const handleSave = async (id, data) => {
+    const result = await dispatch(
+      editFarmerProduct({
+        id,
+        data,
+      }),
+    );
+
+    if (editFarmerProduct.fulfilled.match(result)) {
+      setOpenModal(false);
+      setSelectedProduct(null);
+    }
+  };
+
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-bold">Products</h1>
 
-        <button className="rounded-lg bg-green-600 px-5 py-2 text-white hover:bg-green-700">
+        <button className="rounded-lg bg-green-600 px-5 py-2 text-white transition hover:bg-green-700">
           + Add Product
         </button>
       </div>
@@ -42,15 +79,10 @@ function Products() {
           <thead className="bg-gray-100">
             <tr>
               <th className="p-4 text-left">Product</th>
-
               <th className="text-left">Category</th>
-
               <th className="text-left">Price</th>
-
               <th className="text-left">Quantity</th>
-
               <th className="text-left">Status</th>
-
               <th className="text-center">Actions</th>
             </tr>
           </thead>
@@ -94,11 +126,17 @@ function Products() {
                   </td>
 
                   <td className="space-x-2 text-center">
-                    <button className="rounded bg-blue-500 px-3 py-1 text-white">
+                    <button
+                      onClick={() => handleEdit(product)}
+                      className="rounded bg-blue-500 px-3 py-1 text-white transition hover:bg-blue-600"
+                    >
                       Edit
                     </button>
 
-                    <button className="rounded bg-red-500 px-3 py-1 text-white">
+                    <button
+                      onClick={() => handleDelete(product._id)}
+                      className="rounded bg-red-500 px-3 py-1 text-white transition hover:bg-red-600"
+                    >
                       Delete
                     </button>
                   </td>
@@ -108,6 +146,16 @@ function Products() {
           </tbody>
         </table>
       </div>
+
+      <EditProductModal
+        product={selectedProduct}
+        isOpen={openModal}
+        onClose={() => {
+          setOpenModal(false);
+          setSelectedProduct(null);
+        }}
+        onSave={handleSave}
+      />
     </section>
   );
 }
