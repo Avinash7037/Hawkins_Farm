@@ -7,13 +7,14 @@ import Login from "../features/auth/pages/Login";
 import Register from "../features/auth/pages/Register";
 import Marketplace from "../features/marketplace/pages/Marketplace";
 import BuyerDashboard from "../features/buyer/pages/BuyerDashboard";
-import FarmerDashboard from "../features/farmer/pages/FarmerDashboard";
+// import FarmerDashboard from "../features/farmer/pages/FarmerDashboard";
 import AdminDashboard from "../features/admin/pages/AdminDashboard";
 import NotFound from "../features/notFound/pages/NotFound";
 import ProductDetails from "../features/marketplace/pages/ProductDetails";
 import Cart from "../features/cart/pages/Cart";
 import Checkout from "../features/orders/pages/Checkout";
 import MyOrders from "../features/orders/pages/MyOrders";
+import FarmerDashboard from "../features/dashboard/pages/FarmerDashboard";
 
 function AppRoutes() {
   return (
@@ -25,6 +26,7 @@ function AppRoutes() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/orders" element={<MyOrders />} />
+        <Route path="/farmer/dashboard" element={<FarmerDashboard />} />
       </Route>
 
       <Route path="/login" element={<Login />} />
