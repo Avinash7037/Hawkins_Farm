@@ -15,6 +15,7 @@ import Cart from "../features/cart/pages/Cart";
 import Checkout from "../features/orders/pages/Checkout";
 import MyOrders from "../features/orders/pages/MyOrders";
 import FarmerDashboard from "../features/dashboard/pages/FarmerDashboard";
+import Products from "../features/dashboard/pages/Products";
 
 function AppRoutes() {
   return (
@@ -27,6 +28,7 @@ function AppRoutes() {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/orders" element={<MyOrders />} />
         <Route path="/farmer/dashboard" element={<FarmerDashboard />} />
+        <Route path="/farmer/products" element={<Products />} />
       </Route>
 
       <Route path="/login" element={<Login />} />
