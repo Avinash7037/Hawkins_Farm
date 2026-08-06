@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import EditProductModal from "../components/EditProductModal";
+import AddProductModal from "../components/AddProductModal";
 
 import {
   fetchFarmerProducts,
+  addFarmerProduct,
   editFarmerProduct,
   removeFarmerProduct,
 } from "../productThunks";
@@ -15,8 +17,12 @@ function Products() {
   const { products, loading } = useSelector((state) => state.dashboard);
 
   const [search, setSearch] = useState("");
+
   const [selectedProduct, setSelectedProduct] = useState(null);
+
   const [openModal, setOpenModal] = useState(false);
+
+  const [openAddModal, setOpenAddModal] = useState(false);
 
   useEffect(() => {
     dispatch(fetchFarmerProducts());
@@ -56,12 +62,23 @@ function Products() {
     }
   };
 
+  const handleAddProduct = async (formData) => {
+    const result = await dispatch(addFarmerProduct(formData));
+
+    if (addFarmerProduct.fulfilled.match(result)) {
+      setOpenAddModal(false);
+    }
+  };
+
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-bold">Products</h1>
 
-        <button className="rounded-lg bg-green-600 px-5 py-2 text-white transition hover:bg-green-700">
+        <button
+          onClick={() => setOpenAddModal(true)}
+          className="rounded-lg bg-green-600 px-5 py-2 text-white transition hover:bg-green-700"
+        >
           + Add Product
         </button>
       </div>
@@ -79,10 +96,15 @@ function Products() {
           <thead className="bg-gray-100">
             <tr>
               <th className="p-4 text-left">Product</th>
+
               <th className="text-left">Category</th>
+
               <th className="text-left">Price</th>
+
               <th className="text-left">Quantity</th>
+
               <th className="text-left">Status</th>
+
               <th className="text-center">Actions</th>
             </tr>
           </thead>
@@ -155,6 +177,12 @@ function Products() {
           setSelectedProduct(null);
         }}
         onSave={handleSave}
+      />
+
+      <AddProductModal
+        isOpen={openAddModal}
+        onClose={() => setOpenAddModal(false)}
+        onSave={handleAddProduct}
       />
     </section>
   );

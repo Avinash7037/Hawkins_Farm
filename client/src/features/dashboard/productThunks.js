@@ -1,5 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { getFarmerProducts } from "./productService";
+import { createProduct } from "./productService";
 
 export const fetchFarmerProducts = createAsyncThunk(
   "dashboard/fetchFarmerProducts",
@@ -38,6 +39,19 @@ export const removeFarmerProduct = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data?.message || "Failed to delete product",
+      );
+    }
+  },
+);
+
+export const addFarmerProduct = createAsyncThunk(
+  "dashboard/addFarmerProduct",
+  async (formData, thunkAPI) => {
+    try {
+      return await createProduct(formData);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || "Failed to add product",
       );
     }
   },
