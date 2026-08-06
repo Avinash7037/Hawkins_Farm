@@ -1,24 +1,23 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 
 import DeliveryForm from "../components/DeliveryForm";
 import PaymentMethod from "../components/PaymentMethod";
 import CheckoutSummary from "../components/CheckoutSummary";
-
 import Button from "../../../components/common/Button";
 
-import { createOrder } from "../orderThunks";
 import { fetchCart } from "../../cart/cartThunks";
+import { createCheckout, verifyCheckout } from "../paymentThunks";
 
 function Checkout() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { loading } = useSelector((state) => state.orders);
-
+  const { loading } = useSelector((state) => state.payment);
   const { cart } = useSelector((state) => state.cart);
+  const { user } = useSelector((state) => state.auth);
 
   const {
     register,
@@ -35,17 +34,68 @@ function Checkout() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (!cart.length) {
+    if (cart.length === 0) {
       navigate("/cart");
     }
   }, [cart, navigate]);
 
   const onSubmit = async (data) => {
-    const result = await dispatch(createOrder(data));
+    const checkoutResult = await dispatch(createCheckout(data.deliveryAddress));
 
-    if (createOrder.fulfilled.match(result)) {
-      navigate("/orders");
+    if (!createCheckout.fulfilled.match(checkoutResult)) {
+      alert("Unable to initiate payment.");
+      return;
     }
+
+    const { razorpayOrder } = checkoutResult.payload;
+
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+
+      amount: razorpayOrder.amount,
+
+      currency: razorpayOrder.currency,
+
+      name: "Hawkins Farm",
+
+      description: "Farm Fresh Products",
+
+      order_id: razorpayOrder.id,
+
+      prefill: {
+        name: user?.name || "",
+
+        email: user?.email || "",
+      },
+
+      theme: {
+        color: "#16a34a",
+      },
+
+      handler: async function (response) {
+        const verifyResult = await dispatch(
+          verifyCheckout({
+            razorpay_order_id: response.razorpay_order_id,
+
+            razorpay_payment_id: response.razorpay_payment_id,
+
+            razorpay_signature: response.razorpay_signature,
+          }),
+        );
+
+        if (verifyCheckout.fulfilled.match(verifyResult)) {
+          alert("Payment Successful!");
+
+          navigate("/orders");
+        } else {
+          alert("Payment verification failed.");
+        }
+      },
+    };
+
+    const paymentObject = new window.Razorpay(options);
+
+    paymentObject.open();
   };
 
   return (
@@ -66,7 +116,7 @@ function Checkout() {
           <CheckoutSummary />
 
           <Button type="submit" loading={loading}>
-            Place Order
+            Pay Now
           </Button>
         </div>
       </form>

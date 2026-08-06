@@ -1,7 +1,7 @@
 import api from "../../../services/api";
 
 export const createPaymentOrder = async (deliveryAddress) => {
-  const response = await api.post("/payment/create-order", {
+  const response = await api.post("/payments/create-order", {
     deliveryAddress,
   });
 
@@ -9,7 +9,7 @@ export const createPaymentOrder = async (deliveryAddress) => {
 };
 
 export const verifyPayment = async (paymentData) => {
-  const response = await api.post("/payment/verify", paymentData);
+  const response = await api.post("/payments/verify", paymentData);
 
   return response.data;
 };
