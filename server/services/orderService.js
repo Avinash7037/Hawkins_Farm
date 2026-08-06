@@ -26,7 +26,13 @@ const createOrdersFromCart = async ({
       quantity: item.quantity,
       totalPrice: item.product.price * item.quantity,
       deliveryAddress,
+
+      // Payment
       paymentMethod,
+      paymentStatus: paymentMethod === "ONLINE" ? "Paid" : "Pending",
+
+      // Order
+      orderStatus: "Pending",
     });
 
     orders.push(order);

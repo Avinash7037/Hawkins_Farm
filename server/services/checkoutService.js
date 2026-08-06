@@ -9,15 +9,22 @@ const completeCheckout = async ({
   deliveryAddress,
   paymentMethod,
 }) => {
+  // Create orders
   const orders = await createOrdersFromCart({
     buyerId,
     deliveryAddress,
     paymentMethod,
   });
 
+  // Clear buyer cart
   await clearBuyerCart(buyerId);
 
-  await sendOrderConfirmationEmail(buyerId, orders.length);
+  // Send email (don't fail checkout if email fails)
+  try {
+    await sendOrderConfirmationEmail(buyerId, orders.length);
+  } catch (error) {
+    console.error("Order confirmation email failed:", error.message);
+  }
 
   return orders;
 };

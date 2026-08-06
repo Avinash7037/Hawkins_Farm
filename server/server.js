@@ -59,7 +59,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/payments", paymentRoutes);
+app.use("/api/payments", paymentRoutes); // ✅ Fixed
 app.use("/api/chat", chatRoutes);
 app.use("/api/qr", qrRoutes);
 

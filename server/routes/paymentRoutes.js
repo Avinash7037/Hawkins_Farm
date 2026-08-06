@@ -9,6 +9,13 @@ const {
 
 const { protect, authorize } = require("../middleware/authMiddleware");
 
+router.get("/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "Payment routes are working",
+  });
+});
+
 // Create Razorpay Order
 router.post("/create-order", protect, authorize("buyer"), createPaymentOrder);
 
