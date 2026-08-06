@@ -1,8 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { fetchFarmerDashboard } from "./dashboardThunks";
+import { fetchFarmerProducts } from "./productThunks";
 
 const initialState = {
   dashboard: null,
+  products: [],
   loading: false,
   error: null,
 };
@@ -27,6 +29,9 @@ const dashboardSlice = createSlice({
       .addCase(fetchFarmerDashboard.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(fetchFarmerProducts.fulfilled, (state, action) => {
+        state.products = action.payload.products;
       });
   },
 });

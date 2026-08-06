@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import { fetchProducts } from "../../marketplace/productThunks";
+import { fetchFarmerProducts } from "../productThunks";
 
 function Products() {
   const dispatch = useDispatch();
 
-  const { products, loading } = useSelector((state) => state.products);
+  const { products, loading } = useSelector((state) => state.dashboard);
 
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    dispatch(fetchProducts());
+    dispatch(fetchFarmerProducts());
   }, [dispatch]);
 
   const farmerProducts =
