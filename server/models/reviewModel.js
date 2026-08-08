@@ -14,6 +14,12 @@ const reviewSchema = new mongoose.Schema(
       required: true,
     },
 
+    order: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      required: true,
+    },
+
     rating: {
       type: Number,
       required: true,
@@ -25,10 +31,23 @@ const reviewSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      minlength: 3,
+      maxlength: 500,
     },
   },
   {
     timestamps: true,
+  },
+);
+
+// One review per buyer per order
+reviewSchema.index(
+  {
+    buyer: 1,
+    order: 1,
+  },
+  {
+    unique: true,
   },
 );
 
