@@ -1,5 +1,12 @@
 const Order = require("../models/orderModel");
+const User = require("../models/userModel");
+
 const { createOrdersFromCart } = require("../services/orderService");
+const sendEmail = require("../utils/sendEmail");
+
+// =====================================================
+// Buyer Places Order
+// =====================================================
 
 const placeOrder = async (req, res) => {
   try {
@@ -26,6 +33,10 @@ const placeOrder = async (req, res) => {
   }
 };
 
+// =====================================================
+// Buyer Orders
+// =====================================================
+
 const getBuyerOrders = async (req, res) => {
   try {
     const orders = await Order.find({
@@ -48,6 +59,10 @@ const getBuyerOrders = async (req, res) => {
   }
 };
 
+// =====================================================
+// Farmer Orders
+// =====================================================
+
 const getFarmerOrders = async (req, res) => {
   try {
     const orders = await Order.find({
@@ -69,6 +84,10 @@ const getFarmerOrders = async (req, res) => {
     });
   }
 };
+
+// =====================================================
+// Get Single Order
+// =====================================================
 
 const getOrderById = async (req, res) => {
   try {
@@ -96,19 +115,27 @@ const getOrderById = async (req, res) => {
   }
 };
 
+// =====================================================
+// Farmer Updates Order Status
+// =====================================================
+
 const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { orderStatus } = req.body;
 
+    // These statuses must match orderModel.js
     const validStatuses = [
+      "Pending",
       "Accepted",
       "Rejected",
       "Packed",
       "Shipped",
       "Delivered",
+      "Cancelled",
     ];
 
+    // Validate status
     if (!validStatuses.includes(orderStatus)) {
       return res.status(400).json({
         success: false,
@@ -116,6 +143,7 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
+    // Find order
     const order = await Order.findById(id);
 
     if (!order) {
@@ -133,34 +161,56 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
+    // Update status
     order.orderStatus = orderStatus;
 
     await order.save();
 
-    // Send order status update email
-    const buyer = await User.findById(order.buyer);
+    // Notify buyer by email
+    // Email failure must NOT make the order update fail.
+    try {
+      const buyer = await User.findById(order.buyer);
 
-    if (buyer) {
-      await sendEmail({
-        to: buyer.email,
-        subject: "Order Status Updated - Hawkins Farm",
-        html: `
-          <h2>Hello ${buyer.name},</h2>
-          <p>Your order status has been updated.</p>
+      if (buyer) {
+        await sendEmail({
+          to: buyer.email,
 
-          <h3>Current Status: ${order.orderStatus}</h3>
+          subject: "Order Status Updated - Hawkins Farm",
 
-          <p>Thank you for shopping with Hawkins Farm.</p>
-        `,
-      });
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+              <h2>Hello ${buyer.name},</h2>
+
+              <p>
+                Your Hawkins Farm order status has been updated.
+              </p>
+
+              <h3>
+                Current Status:
+                ${order.orderStatus}
+              </h3>
+
+              <p>
+                Thank you for shopping with
+                <strong>Hawkins Farm</strong>.
+              </p>
+            </div>
+          `,
+        });
+      }
+    } catch (emailError) {
+      console.error("Order status email failed:", emailError.message);
     }
 
+    // Return updated order
     res.status(200).json({
       success: true,
       message: "Order status updated successfully",
       order,
     });
   } catch (error) {
+    console.error("Update Order Status Error:", error);
+
     res.status(500).json({
       success: false,
       message: error.message,

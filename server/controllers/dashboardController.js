@@ -7,15 +7,23 @@ const getFarmerDashboard = async (req, res) => {
   try {
     const farmerId = req.user._id;
 
-    // Total Products
+    // Products
     const totalProducts = await Product.countDocuments({
       farmer: farmerId,
     });
 
-    // Farmer Orders
+    const activeProducts = await Product.countDocuments({
+      farmer: farmerId,
+      isAvailable: true,
+    });
+
+    // Orders
     const orders = await Order.find({
       farmer: farmerId,
-    });
+    })
+      .populate("buyer", "name email")
+      .populate("product", "name images")
+      .sort({ createdAt: -1 });
 
     const totalOrders = orders.length;
 
@@ -28,9 +36,10 @@ const getFarmerDashboard = async (req, res) => {
     ).length;
 
     const totalRevenue = orders
-      .filter((order) => order.orderStatus === "Delivered")
+      .filter((order) => order.paymentStatus === "Paid")
       .reduce((sum, order) => sum + order.totalPrice, 0);
 
+    // Ratings
     const products = await Product.find({
       farmer: farmerId,
     });
@@ -50,15 +59,20 @@ const getFarmerDashboard = async (req, res) => {
         ? 0
         : Number((totalRating / ratedProducts).toFixed(1));
 
+    // Recent Orders
+    const recentOrders = orders.slice(0, 5);
+
     res.status(200).json({
       success: true,
       dashboard: {
         totalProducts,
+        activeProducts,
         totalOrders,
         pendingOrders,
         deliveredOrders,
         totalRevenue,
         averageRating,
+        recentOrders,
       },
     });
   } catch (error) {

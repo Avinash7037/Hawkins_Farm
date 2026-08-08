@@ -12,16 +12,25 @@ const {
 
 const { protect, authorize } = require("../middleware/authMiddleware");
 
-// Buyer
+// ---------------- Buyer ----------------
+
+// Cash on Delivery Order
 router.post("/", protect, authorize("buyer"), placeOrder);
 
+// Buyer Orders
 router.get("/my-orders", protect, authorize("buyer"), getBuyerOrders);
 
-// Farmer
+// ---------------- Farmer ----------------
+
+// Farmer Orders
 router.get("/farmer-orders", protect, authorize("farmer"), getFarmerOrders);
 
-// Shared
-router.get("/:id", protect, getOrderById);
+// Update Order Status
 router.put("/:id/status", protect, authorize("farmer"), updateOrderStatus);
+
+// ---------------- Shared ----------------
+
+// Get Single Order
+router.get("/:id", protect, getOrderById);
 
 module.exports = router;
