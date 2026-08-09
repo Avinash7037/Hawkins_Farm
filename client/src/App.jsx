@@ -1,7 +1,13 @@
 import AppRoutes from "./routes/AppRoutes";
+import ChatSocketManager from "./features/chat/ChatSocketManager";
 
 function App() {
-  return <AppRoutes />;
+  return (
+    <>
+      <ChatSocketManager />
+      <AppRoutes />
+    </>
+  );
 }
 
 export default App;

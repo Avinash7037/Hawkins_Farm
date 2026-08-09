@@ -4,15 +4,22 @@ import { fetchFarmerDashboard } from "./dashboardThunks";
 
 import {
   fetchFarmerProducts,
+  addFarmerProduct,
   editFarmerProduct,
   removeFarmerProduct,
-  addFarmerProduct,
 } from "./productThunks";
+
+import { fetchFarmerOrders, updateFarmerOrderStatus } from "./orderThunks";
 
 const initialState = {
   dashboard: null,
+
   products: [],
+
+  orders: [],
+
   loading: false,
+
   error: null,
 };
 
@@ -25,7 +32,11 @@ const dashboardSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-      // Dashboard
+
+      // ===========================
+      // Farmer Dashboard
+      // ===========================
+
       .addCase(fetchFarmerDashboard.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -41,7 +52,10 @@ const dashboardSlice = createSlice({
         state.error = action.payload;
       })
 
+      // ===========================
       // Farmer Products
+      // ===========================
+
       .addCase(fetchFarmerProducts.pending, (state) => {
         state.loading = true;
       })
@@ -57,11 +71,13 @@ const dashboardSlice = createSlice({
       })
 
       // Add Product
+
       .addCase(addFarmerProduct.fulfilled, (state, action) => {
         state.products.unshift(action.payload.product);
       })
 
       // Edit Product
+
       .addCase(editFarmerProduct.fulfilled, (state, action) => {
         const index = state.products.findIndex(
           (product) => product._id === action.payload.product._id,
@@ -73,10 +89,41 @@ const dashboardSlice = createSlice({
       })
 
       // Delete Product
+
       .addCase(removeFarmerProduct.fulfilled, (state, action) => {
         state.products = state.products.filter(
           (product) => product._id !== action.payload,
         );
+      })
+
+      // ===========================
+      // Farmer Orders
+      // ===========================
+
+      .addCase(fetchFarmerOrders.pending, (state) => {
+        state.loading = true;
+      })
+
+      .addCase(fetchFarmerOrders.fulfilled, (state, action) => {
+        state.loading = false;
+        state.orders = action.payload.orders;
+      })
+
+      .addCase(fetchFarmerOrders.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Update Order Status
+
+      .addCase(updateFarmerOrderStatus.fulfilled, (state, action) => {
+        const index = state.orders.findIndex(
+          (order) => order._id === action.payload.order._id,
+        );
+
+        if (index !== -1) {
+          state.orders[index] = action.payload.order;
+        }
       });
   },
 });

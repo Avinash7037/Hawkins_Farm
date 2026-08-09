@@ -6,6 +6,9 @@ import cartReducer from "../features/cart/cartSlice";
 import orderReducer from "../features/orders/orderSlice";
 import paymentReducer from "../features/orders/paymentSlice";
 import dashboardReducer from "../features/dashboard/dashboardSlice";
+import farmerOrdersReducer from "../features/dashboard/orderSlice";
+import reviewReducer from "../features/reviews/reviewSlice";
+import chatReducer from "../features/chat/chatSlice";
 
 export const store = configureStore({
   reducer: {
@@ -15,5 +18,8 @@ export const store = configureStore({
     orders: orderReducer,
     payment: paymentReducer,
     dashboard: dashboardReducer,
+    farmerOrders: farmerOrdersReducer,
+    reviews: reviewReducer,
+    chat: chatReducer,
   },
 });
