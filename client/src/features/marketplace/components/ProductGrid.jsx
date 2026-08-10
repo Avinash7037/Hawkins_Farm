@@ -1,22 +1,34 @@
 import ProductCard from "./ProductCard";
 
-function ProductGrid({ products }) {
+function ProductGrid({ products = [] }) {
+  // =====================================================
+  // Empty State
+  // =====================================================
+
   if (!products.length) {
     return (
-      <div className="py-20 text-center">
-        <h2 className="text-2xl font-semibold text-gray-700">
-          No products found
-        </h2>
+      <div className="flex min-h-[300px] items-center justify-center rounded-2xl border bg-gray-50 px-6 text-center">
+        <div>
+          <div className="text-5xl">🥕</div>
 
-        <p className="mt-2 text-gray-500">
-          Try changing your search or filters.
-        </p>
+          <h2 className="mt-4 text-xl font-semibold text-gray-900">
+            No products found
+          </h2>
+
+          <p className="mt-2 text-gray-500">
+            Try changing your search or filters.
+          </p>
+        </div>
       </div>
     );
   }
 
+  // =====================================================
+  // Product Grid
+  // =====================================================
+
   return (
-    <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {products.map((product) => (
         <ProductCard key={product._id} product={product} />
       ))}

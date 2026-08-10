@@ -10,12 +10,17 @@ import {
   clearTypingUser,
 } from "./chatSlice";
 
+import { addNotification } from "../notifications/notificationSlice";
+
+import {
+  fetchNotifications,
+  fetchUnreadNotificationCount,
+} from "../notifications/notificationThunks";
+
 function ChatSocketManager() {
   const dispatch = useDispatch();
 
   const { user, token } = useSelector((state) => state.auth);
-
-  const { activeUser } = useSelector((state) => state.chat);
 
   // =====================================================
   // Connect Socket
@@ -24,18 +29,26 @@ function ChatSocketManager() {
   useEffect(() => {
     if (!user?._id || !token) {
       disconnectSocket();
+
       return;
     }
 
-    connectSocket(token);
+    connectSocket(token, user._id);
 
-    return () => {
-      // Do not disconnect here.
-      //
-      // ChatSocketManager stays mounted while navigating
-      // between pages.
-    };
-  }, [user?._id, token]);
+    // ===================================================
+    // Load Existing Notifications
+    // ===================================================
+
+    dispatch(fetchNotifications());
+
+    dispatch(fetchUnreadNotificationCount());
+
+    // ===================================================
+    // Do Not Disconnect During Navigation
+    // ===================================================
+
+    return undefined;
+  }, [user?._id, token, dispatch]);
 
   // =====================================================
   // Socket Event Listeners
@@ -43,7 +56,7 @@ function ChatSocketManager() {
 
   useEffect(() => {
     if (!user?._id) {
-      return;
+      return undefined;
     }
 
     // ===================================================
@@ -90,6 +103,20 @@ function ChatSocketManager() {
       console.error("Chat message error:", error?.message || error);
     };
 
+    // ===================================================
+    // Notification
+    // ===================================================
+
+    const handleNotification = (notification) => {
+      console.log("🔔 New notification:", notification);
+
+      dispatch(addNotification(notification));
+    };
+
+    // ===================================================
+    // Register Listeners
+    // ===================================================
+
     socket.on("onlineUsers", handleOnlineUsers);
 
     socket.on("receiveMessage", handleReceiveMessage);
@@ -100,8 +127,10 @@ function ChatSocketManager() {
 
     socket.on("messageError", handleMessageError);
 
+    socket.on("notification", handleNotification);
+
     // ===================================================
-    // Cleanup Listeners
+    // Cleanup
     // ===================================================
 
     return () => {
@@ -114,8 +143,10 @@ function ChatSocketManager() {
       socket.off("stopTyping", handleStopTyping);
 
       socket.off("messageError", handleMessageError);
+
+      socket.off("notification", handleNotification);
     };
-  }, [dispatch, user?._id, activeUser]);
+  }, [dispatch, user?._id]);
 
   return null;
 }

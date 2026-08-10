@@ -1,41 +1,41 @@
 import api from "../../../services/api";
 
 // =====================================================
-// Place Order
+// Get My Notifications
 // =====================================================
 
-export const placeOrder = async (orderData) => {
-  const response = await api.post("/orders", orderData);
+export const getMyNotifications = async () => {
+  const response = await api.get("/notifications");
 
   return response.data;
 };
 
 // =====================================================
-// Get My Orders
+// Get Unread Count
 // =====================================================
 
-export const getMyOrders = async () => {
-  const response = await api.get("/orders/my-orders");
+export const getUnreadNotificationCount = async () => {
+  const response = await api.get("/notifications/unread-count");
 
   return response.data;
 };
 
 // =====================================================
-// Get Single Order
+// Mark One As Read
 // =====================================================
 
-export const getOrder = async (id) => {
-  const response = await api.get(`/orders/${id}`);
+export const markNotificationAsRead = async (id) => {
+  const response = await api.put(`/notifications/${id}/read`);
 
   return response.data;
 };
 
 // =====================================================
-// Cancel Buyer Order
+// Mark All As Read
 // =====================================================
 
-export const cancelOrder = async (id) => {
-  const response = await api.put(`/orders/${id}/cancel`);
+export const markAllNotificationsAsRead = async () => {
+  const response = await api.put("/notifications/read-all");
 
   return response.data;
 };

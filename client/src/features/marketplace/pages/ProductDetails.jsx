@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+
 import { useDispatch, useSelector } from "react-redux";
-import { useParams, useNavigate } from "react-router-dom";
+
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { fetchProduct } from "../productThunks";
+
 import { addItemToCart } from "../../cart/cartThunks";
 
 import { fetchMyOrders } from "../../orders/orderThunks";
@@ -16,8 +19,18 @@ import {
 
 function ProductDetails() {
   const { id } = useParams();
+
   const navigate = useNavigate();
+
   const dispatch = useDispatch();
+
+  const [searchParams] = useSearchParams();
+
+  // =====================================================
+  // Review Order ID
+  // =====================================================
+
+  const orderId = searchParams.get("orderId");
 
   // =====================================================
   // Redux State
@@ -41,10 +54,13 @@ function ProductDetails() {
   // =====================================================
 
   const [rating, setRating] = useState(5);
+
   const [comment, setComment] = useState("");
 
   const [editingReview, setEditingReview] = useState(null);
+
   const [editRating, setEditRating] = useState(5);
+
   const [editComment, setEditComment] = useState("");
 
   // =====================================================
@@ -82,7 +98,13 @@ function ProductDetails() {
   // =====================================================
 
   const handleAddToCart = async () => {
-    if (!product) return;
+    if (!product) {
+      return;
+    }
+
+    if (!product.isAvailable || product.quantity < 1) {
+      return;
+    }
 
     const result = await dispatch(
       addItemToCart({
@@ -124,26 +146,37 @@ function ProductDetails() {
       return null;
     }
 
-    return (
-      orders.find((order) => {
-        const orderProductId =
-          typeof order.product === "object"
-            ? order.product?._id
-            : order.product;
+    const matchingOrders = orders.filter((order) => {
+      const orderProductId =
+        typeof order.product === "object" ? order.product?._id : order.product;
 
-        return (
-          orderProductId === product._id && order.orderStatus === "Delivered"
-        );
-      }) || null
-    );
-  }, [orders, product]);
+      return (
+        orderProductId === product._id && order.orderStatus === "Delivered"
+      );
+    });
+
+    // ---------------------------------------------------
+    // If a specific order was supplied through the URL,
+    // use that exact delivered order.
+    // ---------------------------------------------------
+
+    if (orderId) {
+      return matchingOrders.find((order) => order._id === orderId) || null;
+    }
+
+    // ---------------------------------------------------
+    // Otherwise use the first delivered order.
+    // ---------------------------------------------------
+
+    return matchingOrders[0] || null;
+  }, [orders, product, orderId]);
 
   // =====================================================
-  // Current Buyer's Review
+  // Current Buyer's Review For Selected Order
   // =====================================================
 
   const currentUserReview = useMemo(() => {
-    if (!user || !reviews) {
+    if (!user || !reviews || !deliveredOrder) {
       return null;
     }
 
@@ -152,10 +185,13 @@ function ProductDetails() {
         const buyerId =
           typeof review.buyer === "object" ? review.buyer?._id : review.buyer;
 
-        return buyerId === user._id;
+        const reviewOrderId =
+          typeof review.order === "object" ? review.order?._id : review.order;
+
+        return buyerId === user._id && reviewOrderId === deliveredOrder._id;
       }) || null
     );
-  }, [reviews, user]);
+  }, [reviews, user, deliveredOrder]);
 
   // =====================================================
   // Add Review
@@ -163,6 +199,10 @@ function ProductDetails() {
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
+
+    if (!product) {
+      return;
+    }
 
     if (!deliveredOrder) {
       return;
@@ -183,9 +223,11 @@ function ProductDetails() {
 
     if (createReview.fulfilled.match(result)) {
       setRating(5);
+
       setComment("");
 
       dispatch(fetchProductReviews(product._id));
+
       dispatch(fetchProduct(product._id));
     }
   };
@@ -198,6 +240,7 @@ function ProductDetails() {
     setEditingReview(review);
 
     setEditRating(review.rating);
+
     setEditComment(review.comment);
   };
 
@@ -228,10 +271,13 @@ function ProductDetails() {
 
     if (editReview.fulfilled.match(result)) {
       setEditingReview(null);
+
       setEditRating(5);
+
       setEditComment("");
 
       dispatch(fetchProductReviews(product._id));
+
       dispatch(fetchProduct(product._id));
     }
   };
@@ -253,6 +299,7 @@ function ProductDetails() {
 
     if (removeReview.fulfilled.match(result)) {
       dispatch(fetchProductReviews(product._id));
+
       dispatch(fetchProduct(product._id));
     }
   };
@@ -301,6 +348,12 @@ function ProductDetails() {
     typeof product.farmer === "object" ? product.farmer?._id : product.farmer;
 
   // =====================================================
+  // Product Availability
+  // =====================================================
+
+  const isAvailable = product.isAvailable && Number(product.quantity) > 0;
+
+  // =====================================================
   // Render
   // =====================================================
 
@@ -311,7 +364,9 @@ function ProductDetails() {
       ================================================= */}
 
       <div className="grid gap-12 md:grid-cols-2">
-        {/* Product Image */}
+        {/* =================================================
+            Product Image
+        ================================================= */}
 
         <div>
           <img
@@ -319,21 +374,29 @@ function ProductDetails() {
               product.images?.[0]?.url ||
               "https://placehold.co/700x500?text=No+Image"
             }
-            alt={product.name}
+            alt={product.name || "Product"}
             className="h-full max-h-[550px] w-full rounded-2xl object-cover shadow-lg"
           />
         </div>
 
-        {/* Product Details */}
+        {/* =================================================
+            Product Details
+        ================================================= */}
 
         <div>
+          {/* Category */}
+
           <span className="inline-block rounded-full bg-emerald-100 px-4 py-1 text-sm font-medium text-emerald-700">
             {product.category}
           </span>
 
+          {/* Product Name */}
+
           <h1 className="mt-4 text-5xl font-bold text-gray-900">
             {product.name}
           </h1>
+
+          {/* Description */}
 
           <p className="mt-6 leading-8 text-gray-600">{product.description}</p>
 
@@ -341,7 +404,9 @@ function ProductDetails() {
 
           <div className="mt-5 flex items-center gap-3">
             <div className="flex text-xl text-yellow-500">
-              {Array.from({ length: 5 }).map((_, index) => (
+              {Array.from({
+                length: 5,
+              }).map((_, index) => (
                 <span key={index}>
                   {index < Math.round(product.rating || 0) ? "★" : "☆"}
                 </span>
@@ -357,9 +422,13 @@ function ProductDetails() {
             </span>
           </div>
 
+          {/* Price */}
+
           <h2 className="mt-8 text-4xl font-bold text-emerald-600">
-            ₹{product.price}
+            ₹{Number(product.price || 0).toLocaleString("en-IN")}
           </h2>
+
+          {/* Product Information */}
 
           <div className="mt-8 space-y-3 text-gray-600">
             <p>
@@ -375,23 +444,46 @@ function ProductDetails() {
             </p>
 
             <p>
-              <strong>Farmer:</strong> {product.farmer?.name || "Unknown"}
+              <strong>Farmer:</strong>{" "}
+              {typeof product.farmer === "object"
+                ? product.farmer?.name || "Unknown"
+                : "Unknown"}
+            </p>
+
+            <p>
+              <strong>Availability:</strong>{" "}
+              <span
+                className={
+                  isAvailable
+                    ? "font-semibold text-green-600"
+                    : "font-semibold text-red-600"
+                }
+              >
+                {isAvailable ? "In Stock" : "Out of Stock"}
+              </span>
             </p>
           </div>
 
-          {/* Add To Cart */}
+          {/* =================================================
+              Add To Cart
+          ================================================= */}
 
           <button
+            type="button"
             onClick={handleAddToCart}
-            className="mt-10 rounded-xl bg-emerald-600 px-8 py-4 font-semibold text-white transition hover:bg-emerald-700"
+            disabled={!isAvailable}
+            className="mt-10 w-full rounded-xl bg-emerald-600 px-8 py-4 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-400"
           >
-            Add to Cart
+            {isAvailable ? "Add to Cart" : "Out of Stock"}
           </button>
 
-          {/* Chat With Farmer */}
+          {/* =================================================
+              Chat With Farmer
+          ================================================= */}
 
           {user?.role === "buyer" && (
             <button
+              type="button"
               onClick={handleChatWithFarmer}
               disabled={!farmerId}
               className="mt-3 w-full rounded-xl border-2 border-emerald-600 px-8 py-4 font-semibold text-emerald-600 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -407,6 +499,10 @@ function ProductDetails() {
       ================================================= */}
 
       <div className="border-t pt-10">
+        {/* =================================================
+            Review Header
+        ================================================= */}
+
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900">Customer Reviews</h2>
 
@@ -441,6 +537,7 @@ function ProductDetails() {
                     key={star}
                     type="button"
                     onClick={() => setRating(star)}
+                    aria-label={`Rate ${star} out of 5`}
                     className={`text-3xl transition ${
                       star <= rating ? "text-yellow-500" : "text-gray-300"
                     }`}
@@ -470,11 +567,19 @@ function ProductDetails() {
                 maxLength={500}
                 className="w-full rounded-lg border p-3 outline-none focus:border-emerald-500"
               />
+
+              <p className="mt-1 text-right text-xs text-gray-400">
+                {comment.length}/500
+              </p>
             </div>
+
+            {/* Error */}
 
             {reviewError && (
               <p className="mt-3 text-sm text-red-600">{reviewError}</p>
             )}
+
+            {/* Submit */}
 
             <button
               type="submit"
@@ -487,7 +592,7 @@ function ProductDetails() {
         )}
 
         {/* =================================================
-            Review Eligibility Messages
+            Review Eligibility
         ================================================= */}
 
         {user?.role === "buyer" && !deliveredOrder && !currentUserReview && (
@@ -498,12 +603,12 @@ function ProductDetails() {
 
         {user?.role === "buyer" && currentUserReview && (
           <div className="mb-10 rounded-xl bg-emerald-50 p-5 text-emerald-700">
-            You have already reviewed this product.
+            You have already reviewed this order.
           </div>
         )}
 
         {/* =================================================
-            Loading Reviews
+            Reviews Loading
         ================================================= */}
 
         {reviewsLoading ? (
@@ -520,16 +625,20 @@ function ProductDetails() {
               const buyerName =
                 typeof review.buyer === "object" ? review.buyer?.name : "Buyer";
 
-              const isOwnReview =
-                user &&
-                typeof review.buyer === "object" &&
-                review.buyer?._id === user._id;
+              const buyerId =
+                typeof review.buyer === "object"
+                  ? review.buyer?._id
+                  : review.buyer;
+
+              const isOwnReview = user && buyerId === user._id;
 
               return (
                 <div
                   key={review._id}
                   className="rounded-xl border bg-white p-6 shadow-sm"
                 >
+                  {/* Review Header */}
+
                   <div className="flex flex-col justify-between gap-3 sm:flex-row">
                     <div>
                       <p className="font-semibold text-gray-900">
@@ -548,7 +657,8 @@ function ProductDetails() {
                         </div>
 
                         <span className="text-sm text-gray-500">
-                          {review.rating}/5
+                          {review.rating}
+                          /5
                         </span>
                       </div>
                     </div>
@@ -560,16 +670,21 @@ function ProductDetails() {
                     </span>
                   </div>
 
-                  {/* Review Comment */}
+                  {/* =================================================
+                        Edit Review
+                    ================================================= */}
 
                   {editingReview?._id === review._id ? (
                     <form onSubmit={handleUpdateReview} className="mt-5">
+                      {/* Edit Rating */}
+
                       <div className="flex gap-2">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <button
                             key={star}
                             type="button"
                             onClick={() => setEditRating(star)}
+                            aria-label={`Rate ${star} out of 5`}
                             className={`text-2xl ${
                               star <= editRating
                                 ? "text-yellow-500"
@@ -581,19 +696,28 @@ function ProductDetails() {
                         ))}
                       </div>
 
+                      {/* Edit Comment */}
+
                       <textarea
                         value={editComment}
                         onChange={(e) => setEditComment(e.target.value)}
                         maxLength={500}
                         rows={4}
-                        className="mt-3 w-full rounded-lg border p-3"
+                        className="mt-3 w-full rounded-lg border p-3 outline-none focus:border-emerald-500"
                       />
+
+                      <p className="mt-1 text-right text-xs text-gray-400">
+                        {editComment.length}
+                        /500
+                      </p>
+
+                      {/* Edit Actions */}
 
                       <div className="mt-3 flex gap-2">
                         <button
                           type="submit"
                           disabled={reviewSubmitting || !editComment.trim()}
-                          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {reviewSubmitting ? "Saving..." : "Save"}
                         </button>
@@ -609,13 +733,18 @@ function ProductDetails() {
                     </form>
                   ) : (
                     <>
+                      {/* Review Comment */}
+
                       <p className="mt-4 leading-7 text-gray-600">
                         {review.comment}
                       </p>
 
+                      {/* Own Review Actions */}
+
                       {isOwnReview && (
                         <div className="mt-4 flex gap-3">
                           <button
+                            type="button"
                             onClick={() => handleEditClick(review)}
                             className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-600"
                           >
@@ -623,11 +752,12 @@ function ProductDetails() {
                           </button>
 
                           <button
+                            type="button"
                             onClick={() => handleDeleteReview(review._id)}
                             disabled={reviewSubmitting}
-                            className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600 disabled:opacity-50"
+                            className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            Delete
+                            {reviewSubmitting ? "Deleting..." : "Delete"}
                           </button>
                         </div>
                       )}

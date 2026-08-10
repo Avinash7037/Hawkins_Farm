@@ -1,6 +1,14 @@
 import { io } from "socket.io-client";
 
+// =====================================================
+// Socket Server URL
+// =====================================================
+
 const SOCKET_URL = "http://localhost:5000";
+
+// =====================================================
+// Socket Instance
+// =====================================================
 
 const socket = io(SOCKET_URL, {
   autoConnect: false,
@@ -16,18 +24,21 @@ export const connectSocket = (token, userId) => {
     return;
   }
 
-  // Store token for socket authentication if needed later
+  // ===================================================
+  // Socket Authentication
+  // ===================================================
+
   socket.auth = {
     token,
   };
 
-  // Connect only if not already connected
+  // ===================================================
+  // Connect
+  // ===================================================
+
   if (!socket.connected) {
     socket.connect();
   }
-
-  // Join user room / register online user
-  socket.emit("join", userId);
 };
 
 // =====================================================
@@ -39,5 +50,9 @@ export const disconnectSocket = () => {
     socket.disconnect();
   }
 };
+
+// =====================================================
+// Export Socket
+// =====================================================
 
 export default socket;

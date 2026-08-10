@@ -1,12 +1,46 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { createOrder, fetchMyOrders, fetchOrder } from "./orderThunks";
+
+import {
+  fetchMyOrders,
+  fetchOrderById,
+  createOrder,
+  cancelBuyerOrder,
+} from "./orderThunks";
 
 const initialState = {
+  // =================================================
+  // Orders
+  // =================================================
+
   orders: [],
-  order: null,
+
+  // =================================================
+  // Selected Order
+  // =================================================
+
+  selectedOrder: null,
+
+  // =================================================
+  // Loading
+  // =================================================
+
   loading: false,
+
+  detailsLoading: false,
+
+  placing: false,
+
+  cancelling: false,
+
+  // =================================================
+  // Errors
+  // =================================================
+
   error: null,
-  success: false,
+
+  detailsError: null,
+
+  cancelError: null,
 };
 
 const orderSlice = createSlice({
@@ -15,65 +49,157 @@ const orderSlice = createSlice({
   initialState,
 
   reducers: {
-    clearOrderState: (state) => {
-      state.loading = false;
+    // =================================================
+    // Clear Selected Order
+    // =================================================
+
+    clearSelectedOrder: (state) => {
+      state.selectedOrder = null;
+      state.detailsError = null;
+    },
+
+    // =================================================
+    // Clear Errors
+    // =================================================
+
+    clearOrderError: (state) => {
       state.error = null;
-      state.success = false;
+      state.detailsError = null;
+      state.cancelError = null;
+    },
+
+    // =================================================
+    // Clear Orders
+    // =================================================
+
+    clearOrders: (state) => {
+      state.orders = [];
+      state.selectedOrder = null;
     },
   },
 
   extraReducers: (builder) => {
     builder
 
-      // Create Order
-      .addCase(createOrder.pending, (state) => {
+      // =================================================
+      // Fetch My Orders
+      // =================================================
+
+      .addCase(fetchMyOrders.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
 
-      .addCase(createOrder.fulfilled, (state, action) => {
-        state.loading = false;
-        state.success = true;
-        state.orders = action.payload.orders;
-      })
-
-      .addCase(createOrder.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Fetch Buyer Orders
-      .addCase(fetchMyOrders.pending, (state) => {
-        state.loading = true;
-      })
-
       .addCase(fetchMyOrders.fulfilled, (state, action) => {
         state.loading = false;
-        state.orders = action.payload.orders;
+
+        state.orders = action.payload.orders || [];
+
+        state.error = null;
       })
 
       .addCase(fetchMyOrders.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+
+        state.error = action.payload || "Failed to fetch orders";
       })
 
+      // =================================================
       // Fetch Single Order
-      .addCase(fetchOrder.pending, (state) => {
-        state.loading = true;
+      // =================================================
+
+      .addCase(fetchOrderById.pending, (state) => {
+        state.detailsLoading = true;
+        state.detailsError = null;
       })
 
-      .addCase(fetchOrder.fulfilled, (state, action) => {
-        state.loading = false;
-        state.order = action.payload.order;
+      .addCase(fetchOrderById.fulfilled, (state, action) => {
+        state.detailsLoading = false;
+
+        state.selectedOrder = action.payload.order || null;
+
+        state.detailsError = null;
       })
 
-      .addCase(fetchOrder.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+      .addCase(fetchOrderById.rejected, (state, action) => {
+        state.detailsLoading = false;
+
+        state.detailsError = action.payload || "Failed to fetch order";
+      })
+
+      // =================================================
+      // Create Order
+      // =================================================
+
+      .addCase(createOrder.pending, (state) => {
+        state.placing = true;
+        state.error = null;
+      })
+
+      .addCase(createOrder.fulfilled, (state, action) => {
+        state.placing = false;
+
+        const newOrders = action.payload.orders || [];
+
+        state.orders = [...newOrders, ...state.orders];
+
+        state.error = null;
+      })
+
+      .addCase(createOrder.rejected, (state, action) => {
+        state.placing = false;
+
+        state.error = action.payload || "Failed to place order";
+      })
+
+      // =================================================
+      // Cancel Buyer Order
+      // =================================================
+
+      .addCase(cancelBuyerOrder.pending, (state) => {
+        state.cancelling = true;
+        state.cancelError = null;
+      })
+
+      .addCase(cancelBuyerOrder.fulfilled, (state, action) => {
+        state.cancelling = false;
+
+        const cancelledOrder = action.payload.order;
+
+        if (cancelledOrder) {
+          // -------------------------------------------
+          // Update order in list
+          // -------------------------------------------
+
+          const index = state.orders.findIndex(
+            (order) => order._id === cancelledOrder._id,
+          );
+
+          if (index !== -1) {
+            state.orders[index] = cancelledOrder;
+          }
+
+          // -------------------------------------------
+          // Update selected order
+          // -------------------------------------------
+
+          if (state.selectedOrder?._id === cancelledOrder._id) {
+            state.selectedOrder = cancelledOrder;
+          }
+        }
+
+        state.cancelError = null;
+      })
+
+      .addCase(cancelBuyerOrder.rejected, (state, action) => {
+        state.cancelling = false;
+
+        state.cancelError = action.payload || "Failed to cancel order";
       });
   },
 });
 
-export const { clearOrderState } = orderSlice.actions;
+export const { clearSelectedOrder, clearOrderError, clearOrders } =
+  orderSlice.actions;
 
 export default orderSlice.reducer;

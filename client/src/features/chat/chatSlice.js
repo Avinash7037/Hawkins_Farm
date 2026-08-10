@@ -64,6 +64,7 @@ const chatSlice = createSlice({
     setActiveUser: (state, action) => {
       state.activeUser = action.payload;
       state.error = null;
+      state.sendError = null;
     },
 
     // =================================================
@@ -75,6 +76,7 @@ const chatSlice = createSlice({
       state.chats = [];
       state.typingUser = null;
       state.error = null;
+      state.sendError = null;
     },
 
     // =================================================
@@ -83,6 +85,10 @@ const chatSlice = createSlice({
 
     addMessage: (state, action) => {
       const message = action.payload;
+
+      if (!message?._id) {
+        return;
+      }
 
       const exists = state.chats.some((chat) => chat._id === message._id);
 
@@ -96,7 +102,7 @@ const chatSlice = createSlice({
     // =================================================
 
     setOnlineUsers: (state, action) => {
-      state.onlineUsers = action.payload;
+      state.onlineUsers = action.payload || [];
     },
 
     // =================================================
@@ -165,13 +171,16 @@ const chatSlice = createSlice({
 
       .addCase(fetchChatHistory.fulfilled, (state, action) => {
         state.loading = false;
-        state.chats = action.payload.chats || [];
+
+        state.chats = action.payload?.chats || [];
+
         state.error = null;
       })
 
       .addCase(fetchChatHistory.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+
+        state.error = action.payload || "Failed to fetch chat history";
       })
 
       // =================================================
@@ -183,14 +192,29 @@ const chatSlice = createSlice({
         state.sendError = null;
       })
 
-      .addCase(sendChatMessage.fulfilled, (state) => {
+      .addCase(sendChatMessage.fulfilled, (state, action) => {
         state.sending = false;
         state.sendError = null;
+
+        const message = action.payload?.chat;
+
+        if (!message?._id) {
+          return;
+        }
+
+        // Prevent duplicate message if
+        // Socket.IO also delivers it.
+        const exists = state.chats.some((chat) => chat._id === message._id);
+
+        if (!exists) {
+          state.chats.push(message);
+        }
       })
 
       .addCase(sendChatMessage.rejected, (state, action) => {
         state.sending = false;
-        state.sendError = action.payload;
+
+        state.sendError = action.payload || "Failed to send message";
       })
 
       // =================================================
@@ -202,23 +226,27 @@ const chatSlice = createSlice({
       })
 
       .addCase(fetchUnreadCount.fulfilled, (state, action) => {
-        state.unreadMessages = action.payload.unreadMessages || 0;
+        state.unreadMessages = action.payload?.unreadMessages || 0;
       })
 
       .addCase(fetchUnreadCount.rejected, (state, action) => {
-        state.error = action.payload;
+        state.error = action.payload || "Failed to fetch unread messages";
       })
 
       // =================================================
       // Mark Messages As Read
       // =================================================
 
+      .addCase(markChatAsRead.pending, (state) => {
+        state.error = null;
+      })
+
       .addCase(markChatAsRead.fulfilled, (state) => {
         state.error = null;
       })
 
       .addCase(markChatAsRead.rejected, (state, action) => {
-        state.error = action.payload;
+        state.error = action.payload || "Failed to mark messages as read";
       })
 
       // =================================================
@@ -233,14 +261,15 @@ const chatSlice = createSlice({
       .addCase(fetchMyConversations.fulfilled, (state, action) => {
         state.conversationsLoading = false;
 
-        state.conversations = action.payload.conversations || [];
+        state.conversations = action.payload?.conversations || [];
 
         state.error = null;
       })
 
       .addCase(fetchMyConversations.rejected, (state, action) => {
         state.conversationsLoading = false;
-        state.error = action.payload;
+
+        state.error = action.payload || "Failed to fetch conversations";
       });
   },
 });

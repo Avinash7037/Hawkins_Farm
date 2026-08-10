@@ -20,6 +20,10 @@ const reviewSlice = createSlice({
   initialState,
 
   reducers: {
+    // =================================================
+    // Clear Review Error
+    // =================================================
+
     clearReviewError: (state) => {
       state.error = null;
     },
@@ -28,7 +32,10 @@ const reviewSlice = createSlice({
   extraReducers: (builder) => {
     builder
 
+      // =================================================
       // Fetch Reviews
+      // =================================================
+
       .addCase(fetchProductReviews.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -36,15 +43,22 @@ const reviewSlice = createSlice({
 
       .addCase(fetchProductReviews.fulfilled, (state, action) => {
         state.loading = false;
-        state.reviews = action.payload.reviews;
+
+        state.reviews = action.payload?.reviews || [];
+
+        state.error = null;
       })
 
       .addCase(fetchProductReviews.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+
+        state.error = action.payload || "Failed to fetch reviews";
       })
 
+      // =================================================
       // Create Review
+      // =================================================
+
       .addCase(createReview.pending, (state) => {
         state.submitting = true;
         state.error = null;
@@ -53,17 +67,25 @@ const reviewSlice = createSlice({
       .addCase(createReview.fulfilled, (state, action) => {
         state.submitting = false;
 
-        if (action.payload.review) {
-          state.reviews.unshift(action.payload.review);
+        const newReview = action.payload?.review;
+
+        if (newReview) {
+          state.reviews.unshift(newReview);
         }
+
+        state.error = null;
       })
 
       .addCase(createReview.rejected, (state, action) => {
         state.submitting = false;
-        state.error = action.payload;
+
+        state.error = action.payload || "Failed to add review";
       })
 
+      // =================================================
       // Edit Review
+      // =================================================
+
       .addCase(editReview.pending, (state) => {
         state.submitting = true;
         state.error = null;
@@ -72,23 +94,31 @@ const reviewSlice = createSlice({
       .addCase(editReview.fulfilled, (state, action) => {
         state.submitting = false;
 
-        const updatedReview = action.payload.review;
+        const updatedReview = action.payload?.review;
 
-        const index = state.reviews.findIndex(
-          (review) => review._id === updatedReview._id,
-        );
+        if (updatedReview) {
+          const index = state.reviews.findIndex(
+            (review) => review._id === updatedReview._id,
+          );
 
-        if (index !== -1) {
-          state.reviews[index] = updatedReview;
+          if (index !== -1) {
+            state.reviews[index] = updatedReview;
+          }
         }
+
+        state.error = null;
       })
 
       .addCase(editReview.rejected, (state, action) => {
         state.submitting = false;
-        state.error = action.payload;
+
+        state.error = action.payload || "Failed to update review";
       })
 
+      // =================================================
       // Delete Review
+      // =================================================
+
       .addCase(removeReview.pending, (state) => {
         state.submitting = true;
         state.error = null;
@@ -102,11 +132,14 @@ const reviewSlice = createSlice({
         state.reviews = state.reviews.filter(
           (review) => review._id !== deletedId,
         );
+
+        state.error = null;
       })
 
       .addCase(removeReview.rejected, (state, action) => {
         state.submitting = false;
-        state.error = action.payload;
+
+        state.error = action.payload || "Failed to delete review";
       });
   },
 });

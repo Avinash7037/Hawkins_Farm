@@ -7,8 +7,13 @@ import {
   removeCartItem,
 } from "./services/cartService";
 
+// =====================================================
+// Fetch Cart
+// =====================================================
+
 export const fetchCart = createAsyncThunk(
   "cart/fetchCart",
+
   async (_, thunkAPI) => {
     try {
       return await getCart();
@@ -20,8 +25,13 @@ export const fetchCart = createAsyncThunk(
   },
 );
 
+// =====================================================
+// Add Item To Cart
+// =====================================================
+
 export const addItemToCart = createAsyncThunk(
   "cart/addItem",
+
   async (data, thunkAPI) => {
     try {
       await addToCart(data);
@@ -35,11 +45,19 @@ export const addItemToCart = createAsyncThunk(
   },
 );
 
+// =====================================================
+// Update Cart Quantity
+// =====================================================
+
 export const updateItemQuantity = createAsyncThunk(
   "cart/updateQuantity",
+
   async ({ id, quantity }, thunkAPI) => {
     try {
-      await updateCartQuantity({ id, quantity });
+      await updateCartQuantity({
+        id,
+        quantity,
+      });
 
       return await getCart();
     } catch (error) {
@@ -50,8 +68,13 @@ export const updateItemQuantity = createAsyncThunk(
   },
 );
 
+// =====================================================
+// Delete Cart Item
+// =====================================================
+
 export const deleteCartItem = createAsyncThunk(
   "cart/deleteItem",
+
   async (id, thunkAPI) => {
     try {
       await removeCartItem(id);
