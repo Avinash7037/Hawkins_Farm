@@ -50,6 +50,7 @@ import AdminDashboard from "../features/admin/pages/AdminDashboard";
 import AdminUsers from "../features/admin/pages/AdminUsers";
 import AdminProducts from "../features/admin/pages/AdminProducts";
 import AdminOrders from "../features/admin/pages/AdminOrders";
+import AdminReviews from "../features/admin/pages/AdminReviews";
 
 // =====================================================
 // Not Found
@@ -121,6 +122,7 @@ function AppRoutes() {
           <Route path="/admin/products" element={<AdminProducts />} />
 
           <Route path="/admin/orders" element={<AdminOrders />} />
+          <Route path="/admin/reviews" element={<AdminReviews />} />
         </Route>
 
         {/* =================================================

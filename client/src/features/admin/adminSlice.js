@@ -7,6 +7,8 @@ import {
   fetchAllAdminProducts,
   changeAdminProductStatus,
   fetchAllAdminOrders,
+  fetchAllAdminReviews,
+  deleteAdminReview,
 } from "./adminThunks";
 
 const initialState = {
@@ -47,6 +49,16 @@ const initialState = {
   ordersLoading: false,
 
   // ===================================================
+  // Reviews
+  // ===================================================
+
+  reviews: [],
+
+  reviewsLoading: false,
+
+  deletingReview: false,
+
+  // ===================================================
   // Errors
   // ===================================================
 
@@ -61,6 +73,10 @@ const initialState = {
   updateProductError: null,
 
   ordersError: null,
+
+  reviewsError: null,
+
+  deleteReviewError: null,
 };
 
 const adminSlice = createSlice({
@@ -85,6 +101,10 @@ const adminSlice = createSlice({
       state.updateProductError = null;
 
       state.ordersError = null;
+
+      state.reviewsError = null;
+
+      state.deleteReviewError = null;
     },
   },
 
@@ -97,13 +117,14 @@ const adminSlice = createSlice({
 
       .addCase(fetchAdminDashboard.pending, (state) => {
         state.dashboardLoading = true;
+
         state.error = null;
       })
 
       .addCase(fetchAdminDashboard.fulfilled, (state, action) => {
         state.dashboardLoading = false;
 
-        state.dashboard = action.payload.dashboard || null;
+        state.dashboard = action.payload?.dashboard || null;
 
         state.error = null;
       })
@@ -120,13 +141,14 @@ const adminSlice = createSlice({
 
       .addCase(fetchAllUsers.pending, (state) => {
         state.usersLoading = true;
+
         state.usersError = null;
       })
 
       .addCase(fetchAllUsers.fulfilled, (state, action) => {
         state.usersLoading = false;
 
-        state.users = action.payload.users || [];
+        state.users = action.payload?.users || [];
 
         state.usersError = null;
       })
@@ -143,13 +165,14 @@ const adminSlice = createSlice({
 
       .addCase(changeUserStatus.pending, (state) => {
         state.updatingUser = true;
+
         state.updateUserError = null;
       })
 
       .addCase(changeUserStatus.fulfilled, (state, action) => {
         state.updatingUser = false;
 
-        const updatedUser = action.payload.user;
+        const updatedUser = action.payload?.user;
 
         if (updatedUser) {
           const index = state.users.findIndex(
@@ -177,13 +200,14 @@ const adminSlice = createSlice({
 
       .addCase(fetchAllAdminProducts.pending, (state) => {
         state.productsLoading = true;
+
         state.productsError = null;
       })
 
       .addCase(fetchAllAdminProducts.fulfilled, (state, action) => {
         state.productsLoading = false;
 
-        state.products = action.payload.products || [];
+        state.products = action.payload?.products || [];
 
         state.productsError = null;
       })
@@ -200,13 +224,14 @@ const adminSlice = createSlice({
 
       .addCase(changeAdminProductStatus.pending, (state) => {
         state.updatingProduct = true;
+
         state.updateProductError = null;
       })
 
       .addCase(changeAdminProductStatus.fulfilled, (state, action) => {
         state.updatingProduct = false;
 
-        const updatedProduct = action.payload.product;
+        const updatedProduct = action.payload?.product;
 
         if (updatedProduct) {
           const index = state.products.findIndex(
@@ -234,13 +259,14 @@ const adminSlice = createSlice({
 
       .addCase(fetchAllAdminOrders.pending, (state) => {
         state.ordersLoading = true;
+
         state.ordersError = null;
       })
 
       .addCase(fetchAllAdminOrders.fulfilled, (state, action) => {
         state.ordersLoading = false;
 
-        state.orders = action.payload.orders || [];
+        state.orders = action.payload?.orders || [];
 
         state.ordersError = null;
       })
@@ -249,6 +275,58 @@ const adminSlice = createSlice({
         state.ordersLoading = false;
 
         state.ordersError = action.payload || "Failed to fetch orders";
+      })
+
+      // =================================================
+      // Fetch Admin Reviews
+      // =================================================
+
+      .addCase(fetchAllAdminReviews.pending, (state) => {
+        state.reviewsLoading = true;
+
+        state.reviewsError = null;
+      })
+
+      .addCase(fetchAllAdminReviews.fulfilled, (state, action) => {
+        state.reviewsLoading = false;
+
+        state.reviews = action.payload?.reviews || [];
+
+        state.reviewsError = null;
+      })
+
+      .addCase(fetchAllAdminReviews.rejected, (state, action) => {
+        state.reviewsLoading = false;
+
+        state.reviewsError = action.payload || "Failed to fetch reviews";
+      })
+
+      // =================================================
+      // Delete Admin Review
+      // =================================================
+
+      .addCase(deleteAdminReview.pending, (state) => {
+        state.deletingReview = true;
+
+        state.deleteReviewError = null;
+      })
+
+      .addCase(deleteAdminReview.fulfilled, (state, action) => {
+        state.deletingReview = false;
+
+        const deletedReviewId = action.meta.arg;
+
+        state.reviews = state.reviews.filter(
+          (review) => review._id !== deletedReviewId,
+        );
+
+        state.deleteReviewError = null;
+      })
+
+      .addCase(deleteAdminReview.rejected, (state, action) => {
+        state.deletingReview = false;
+
+        state.deleteReviewError = action.payload || "Failed to delete review";
       });
   },
 });

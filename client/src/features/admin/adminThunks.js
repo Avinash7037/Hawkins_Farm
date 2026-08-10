@@ -7,6 +7,8 @@ import {
   getAllAdminProducts,
   updateAdminProductStatus,
   getAllAdminOrders,
+  getAllAdminReviews,
+  deleteAdminReview as deleteAdminReviewRequest,
 } from "./services/adminService";
 
 // =====================================================
@@ -45,6 +47,10 @@ export const fetchAllUsers = createAsyncThunk(
   },
 );
 
+// =====================================================
+// Change User Status
+// =====================================================
+
 export const changeUserStatus = createAsyncThunk(
   "admin/changeUserStatus",
 
@@ -77,6 +83,10 @@ export const fetchAllAdminProducts = createAsyncThunk(
   },
 );
 
+// =====================================================
+// Change Product Status
+// =====================================================
+
 export const changeAdminProductStatus = createAsyncThunk(
   "admin/changeAdminProductStatus",
 
@@ -104,6 +114,42 @@ export const fetchAllAdminOrders = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data?.message || "Failed to fetch orders",
+      );
+    }
+  },
+);
+
+// =====================================================
+// Reviews
+// =====================================================
+
+export const fetchAllAdminReviews = createAsyncThunk(
+  "admin/fetchAllAdminReviews",
+
+  async (_, thunkAPI) => {
+    try {
+      return await getAllAdminReviews();
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || "Failed to fetch reviews",
+      );
+    }
+  },
+);
+
+// =====================================================
+// Delete Admin Review
+// =====================================================
+
+export const deleteAdminReview = createAsyncThunk(
+  "admin/deleteAdminReview",
+
+  async (id, thunkAPI) => {
+    try {
+      return await deleteAdminReviewRequest(id);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || "Failed to delete review",
       );
     }
   },

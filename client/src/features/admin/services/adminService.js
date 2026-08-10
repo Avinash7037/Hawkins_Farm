@@ -55,3 +55,23 @@ export const getAllAdminOrders = async () => {
 
   return response.data;
 };
+
+// =====================================================
+// Admin Reviews
+// =====================================================
+
+export const getAllAdminReviews = async () => {
+  const response = await api.get("/reviews/admin/all");
+
+  return response.data;
+};
+
+// =====================================================
+// Delete Admin Review
+// =====================================================
+
+export const deleteAdminReview = async (id) => {
+  const response = await api.delete(`/reviews/admin/${id}`);
+
+  return response.data;
+};

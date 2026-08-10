@@ -96,7 +96,15 @@ const getRoleLinks = (role) => {
           name: "Orders",
           path: "/admin/orders",
         },
+        {
+          name: "Reviews",
+          path: "/admin/reviews",
+        },
       ];
+
+    // =================================================
+    // Default
+    // =================================================
 
     default:
       return [];
