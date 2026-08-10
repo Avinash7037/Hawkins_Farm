@@ -17,31 +17,37 @@ const productSchema = new mongoose.Schema(
     description: {
       type: String,
       required: true,
+      trim: true,
     },
 
     category: {
       type: String,
       required: true,
+      trim: true,
     },
 
     price: {
       type: Number,
       required: true,
+      min: 0,
     },
 
     quantity: {
       type: Number,
       required: true,
+      min: 0,
     },
 
     unit: {
       type: String,
       default: "kg",
+      trim: true,
     },
 
     location: {
       type: String,
       required: true,
+      trim: true,
     },
 
     freshness: {
@@ -56,6 +62,7 @@ const productSchema = new mongoose.Schema(
           type: String,
           required: true,
         },
+
         public_id: {
           type: String,
           required: true,
@@ -71,11 +78,14 @@ const productSchema = new mongoose.Schema(
     rating: {
       type: Number,
       default: 0,
+      min: 0,
+      max: 5,
     },
 
     numReviews: {
       type: Number,
       default: 0,
+      min: 0,
     },
   },
   {

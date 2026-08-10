@@ -1,6 +1,15 @@
 const mongoose = require("mongoose");
+
 const Chat = require("../models/chatModel");
 const User = require("../models/userModel");
+
+// =====================================================
+// Helpers
+// =====================================================
+
+const isValidObjectId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id);
+};
 
 // =====================================================
 // Send Message
@@ -10,6 +19,10 @@ const sendMessage = async (req, res) => {
   try {
     const { receiverId, message } = req.body;
 
+    // -------------------------------------------------
+    // Validate Message
+    // -------------------------------------------------
+
     if (!receiverId || !message?.trim()) {
       return res.status(400).json({
         success: false,
@@ -17,14 +30,21 @@ const sendMessage = async (req, res) => {
       });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+    // -------------------------------------------------
+    // Validate Receiver ID
+    // -------------------------------------------------
+
+    if (!isValidObjectId(receiverId)) {
       return res.status(400).json({
         success: false,
         message: "Invalid receiver ID",
       });
     }
 
-    // Prevent messaging yourself
+    // -------------------------------------------------
+    // Prevent Self Messaging
+    // -------------------------------------------------
+
     if (receiverId.toString() === req.user._id.toString()) {
       return res.status(400).json({
         success: false,
@@ -32,8 +52,26 @@ const sendMessage = async (req, res) => {
       });
     }
 
-    // Check receiver exists
-    const receiver = await User.findById(receiverId);
+    // -------------------------------------------------
+    // Validate Message Length
+    // -------------------------------------------------
+
+    const trimmedMessage = message.trim();
+
+    if (trimmedMessage.length > 2000) {
+      return res.status(400).json({
+        success: false,
+        message: "Message cannot exceed 2000 characters",
+      });
+    }
+
+    // -------------------------------------------------
+    // Find Receiver
+    // -------------------------------------------------
+
+    const receiver = await User.findById(receiverId).select(
+      "_id name email role",
+    );
 
     if (!receiver) {
       return res.status(404).json({
@@ -42,23 +80,60 @@ const sendMessage = async (req, res) => {
       });
     }
 
+    // -------------------------------------------------
+    // Buyer ↔ Farmer Communication
+    //
+    // Buyers can message farmers.
+    // Farmers can message buyers.
+    // -------------------------------------------------
+
+    const allowedRoles = ["buyer", "farmer"];
+
+    if (
+      !allowedRoles.includes(req.user.role) ||
+      !allowedRoles.includes(receiver.role)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Chat is only available between buyers and farmers",
+      });
+    }
+
+    if (req.user.role === receiver.role) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only chat with the opposite user role",
+      });
+    }
+
+    // -------------------------------------------------
+    // Create Message
+    // -------------------------------------------------
+
     const chat = await Chat.create({
       sender: req.user._id,
       receiver: receiverId,
-      message: message.trim(),
+      message: trimmedMessage,
+      isRead: false,
     });
+
+    // -------------------------------------------------
+    // Populate Message
+    // -------------------------------------------------
 
     const populatedChat = await Chat.findById(chat._id)
       .populate("sender", "name role")
       .populate("receiver", "name role");
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Message sent successfully",
       chat: populatedChat,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Send Message Error:", error);
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -73,12 +148,20 @@ const getChatHistory = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
+    // -------------------------------------------------
+    // Validate User ID
+    // -------------------------------------------------
+
+    if (!isValidObjectId(userId)) {
       return res.status(400).json({
         success: false,
         message: "Invalid user ID",
       });
     }
+
+    // -------------------------------------------------
+    // Prevent Self Chat
+    // -------------------------------------------------
 
     if (userId.toString() === req.user._id.toString()) {
       return res.status(400).json({
@@ -87,8 +170,11 @@ const getChatHistory = async (req, res) => {
       });
     }
 
-    // Check user exists
-    const user = await User.findById(userId);
+    // -------------------------------------------------
+    // Find Other User
+    // -------------------------------------------------
+
+    const user = await User.findById(userId).select("_id name email role");
 
     if (!user) {
       return res.status(404).json({
@@ -97,7 +183,33 @@ const getChatHistory = async (req, res) => {
       });
     }
 
-    // Mark received messages as read first
+    // -------------------------------------------------
+    // Validate Buyer/Farmer Chat
+    // -------------------------------------------------
+
+    const allowedRoles = ["buyer", "farmer"];
+
+    if (
+      !allowedRoles.includes(req.user.role) ||
+      !allowedRoles.includes(user.role)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Chat is only available between buyers and farmers",
+      });
+    }
+
+    if (req.user.role === user.role) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only chat with the opposite user role",
+      });
+    }
+
+    // -------------------------------------------------
+    // Mark Received Messages As Read
+    // -------------------------------------------------
+
     await Chat.updateMany(
       {
         sender: userId,
@@ -112,7 +224,10 @@ const getChatHistory = async (req, res) => {
       },
     );
 
-    // Fetch updated conversation
+    // -------------------------------------------------
+    // Fetch Conversation
+    // -------------------------------------------------
+
     const chats = await Chat.find({
       $or: [
         {
@@ -127,15 +242,19 @@ const getChatHistory = async (req, res) => {
     })
       .populate("sender", "name role")
       .populate("receiver", "name role")
-      .sort({ createdAt: 1 });
+      .sort({
+        createdAt: 1,
+      });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: chats.length,
       chats,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Get Chat History Error:", error);
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -151,18 +270,36 @@ const getMyConversations = async (req, res) => {
     const userId = req.user._id;
 
     const conversations = await Chat.aggregate([
+      // -------------------------------------------------
+      // Messages involving current user
+      // -------------------------------------------------
+
       {
         $match: {
-          $or: [{ sender: userId }, { receiver: userId }],
+          $or: [
+            {
+              sender: userId,
+            },
+            {
+              receiver: userId,
+            },
+          ],
         },
       },
 
-      // Get latest message for each conversation
+      // -------------------------------------------------
+      // Latest messages first
+      // -------------------------------------------------
+
       {
         $sort: {
           createdAt: -1,
         },
       },
+
+      // -------------------------------------------------
+      // Group by other user
+      // -------------------------------------------------
 
       {
         $group: {
@@ -205,7 +342,10 @@ const getMyConversations = async (req, res) => {
         },
       },
 
-      // Get other user's details
+      // -------------------------------------------------
+      // Get Other User
+      // -------------------------------------------------
+
       {
         $lookup: {
           from: "users",
@@ -218,6 +358,10 @@ const getMyConversations = async (req, res) => {
       {
         $unwind: "$user",
       },
+
+      // -------------------------------------------------
+      // Return Safe User Fields
+      // -------------------------------------------------
 
       {
         $project: {
@@ -236,6 +380,10 @@ const getMyConversations = async (req, res) => {
         },
       },
 
+      // -------------------------------------------------
+      // Latest Conversation First
+      // -------------------------------------------------
+
       {
         $sort: {
           lastMessageAt: -1,
@@ -243,13 +391,15 @@ const getMyConversations = async (req, res) => {
       },
     ]);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: conversations.length,
       conversations,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Get My Conversations Error:", error);
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -267,12 +417,14 @@ const getUnreadCount = async (req, res) => {
       isRead: false,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       unreadMessages: count,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Get Unread Count Error:", error);
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -287,12 +439,31 @@ const markMessagesAsRead = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
+    // -------------------------------------------------
+    // Validate User ID
+    // -------------------------------------------------
+
+    if (!isValidObjectId(userId)) {
       return res.status(400).json({
         success: false,
         message: "Invalid user ID",
       });
     }
+
+    // -------------------------------------------------
+    // Prevent Self
+    // -------------------------------------------------
+
+    if (userId.toString() === req.user._id.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid chat user",
+      });
+    }
+
+    // -------------------------------------------------
+    // Mark Messages
+    // -------------------------------------------------
 
     const result = await Chat.updateMany(
       {
@@ -308,18 +479,24 @@ const markMessagesAsRead = async (req, res) => {
       },
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Messages marked as read",
       modifiedCount: result.modifiedCount,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Mark Messages As Read Error:", error);
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
+
+// =====================================================
+// Export
+// =====================================================
 
 module.exports = {
   sendMessage,
