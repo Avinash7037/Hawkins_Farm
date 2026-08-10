@@ -498,9 +498,110 @@ const deleteReview = async (req, res) => {
 // Export
 // =====================================================
 
+// =====================================================
+// Get All Reviews - Admin
+// =====================================================
+
+const getAllAdminReviews = async (req, res) => {
+  try {
+    const reviews = await Review.find({})
+      .populate("buyer", "name email")
+      .populate("product", "name price unit")
+      .populate("order", "quantity totalPrice orderStatus")
+      .sort({
+        createdAt: -1,
+      });
+
+    return res.status(200).json({
+      success: true,
+      count: reviews.length,
+      reviews,
+    });
+  } catch (error) {
+    console.error("Get All Admin Reviews Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// =====================================================
+// Delete Review - Admin
+// =====================================================
+
+const deleteAdminReview = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // -------------------------------------------------
+    // Validate Review ID
+    // -------------------------------------------------
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Review ID",
+      });
+    }
+
+    // -------------------------------------------------
+    // Find Review
+    // -------------------------------------------------
+
+    const review = await Review.findById(id);
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: "Review not found",
+      });
+    }
+
+    // -------------------------------------------------
+    // Save Product ID
+    // -------------------------------------------------
+
+    const productId = review.product;
+
+    // -------------------------------------------------
+    // Delete Review
+    // -------------------------------------------------
+
+    await review.deleteOne();
+
+    // -------------------------------------------------
+    // Recalculate Product Rating
+    // -------------------------------------------------
+
+    const ratingData = await recalculateProductRating(productId);
+
+    // -------------------------------------------------
+    // Response
+    // -------------------------------------------------
+
+    return res.status(200).json({
+      success: true,
+      message: "Review deleted successfully by admin",
+      reviewId: id,
+      rating: ratingData.rating,
+      numReviews: ratingData.numReviews,
+    });
+  } catch (error) {
+    console.error("Delete Admin Review Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 module.exports = {
   addReview,
   getProductReviews,
   updateReview,
   deleteReview,
+  getAllAdminReviews,
+  deleteAdminReview,
 };
