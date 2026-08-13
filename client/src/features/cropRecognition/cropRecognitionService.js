@@ -19,7 +19,9 @@ export const predictCrop = async (imageFile) => {
 
   formData.append("image", imageFile);
 
-  const response = await axios.post(`${ML_API_URL}/predict`, formData);
+  const response = await axios.post(`${ML_API_URL}/predict`, formData, {
+    timeout: 180000,
+  });
 
   return response.data;
 };

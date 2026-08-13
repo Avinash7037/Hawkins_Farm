@@ -1,3 +1,13 @@
+import os
+
+# =====================================================
+# TensorFlow CPU Configuration
+# =====================================================
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+os.environ["TF_NUM_INTRAOP_THREADS"] = "1"
+os.environ["TF_NUM_INTEROP_THREADS"] = "1"
+
 import json
 from pathlib import Path
 
@@ -16,7 +26,6 @@ from PIL import Image
 BASE_DIR = Path(__file__).resolve().parent
 
 MODEL_PATH = BASE_DIR / "models" / "crop_model_49.keras"
-
 LABELS_PATH = BASE_DIR / "labels.json"
 
 
@@ -26,17 +35,7 @@ LABELS_PATH = BASE_DIR / "labels.json"
 
 app = Flask(__name__)
 
-
-# =====================================================
-# CORS
-# =====================================================
-
-# Allow frontend requests during local development
-# and deployment.
-#
-# For production, this can later be restricted to the
-# exact Render frontend URL.
-
+# Allow frontend requests
 CORS(app)
 
 
@@ -46,10 +45,7 @@ CORS(app)
 
 CROP_CATEGORIES = {
 
-    # =================================================
     # Fruits
-    # =================================================
-
     "Apple": "Fruits",
     "Dragon_Fruits": "Fruits",
     "Grapes": "Fruits",
@@ -58,10 +54,7 @@ CROP_CATEGORIES = {
     "Papaya": "Fruits",
     "Pomegranate": "Fruits",
 
-    # =================================================
     # Vegetables
-    # =================================================
-
     "Bitter_Gourd": "Vegetables",
     "Brinjal": "Vegetables",
     "Broccoli": "Vegetables",
@@ -76,17 +69,11 @@ CROP_CATEGORIES = {
     "Tomato": "Vegetables",
     "Bean": "Vegetables",
 
-    # =================================================
     # Grains
-    # =================================================
-
     "rice": "Grains",
     "wheat": "Grains",
 
-    # =================================================
     # Pulses
-    # =================================================
-
     "chaana_dal": "Pulses",
     "chole": "Pulses",
     "harbara": "Pulses",
@@ -95,10 +82,7 @@ CROP_CATEGORIES = {
     "moong": "Pulses",
     "tur_dal": "Pulses",
 
-    # =================================================
     # Spices
-    # =================================================
-
     "Asafoetida": "Spices",
     "Bay Leaf": "Spices",
     "Black Cardamom": "Spices",
@@ -119,10 +103,7 @@ CROP_CATEGORIES = {
     "Star Anise": "Spices",
     "Stone Flowers": "Spices",
 
-    # =================================================
     # Oilseeds
-    # =================================================
-
     "peanut": "Oilseeds",
 }
 
@@ -132,11 +113,7 @@ CROP_CATEGORIES = {
 # =====================================================
 
 def get_crop_category(crop_name):
-
-    return CROP_CATEGORIES.get(
-        crop_name,
-        "Other",
-    )
+    return CROP_CATEGORIES.get(crop_name, "Other")
 
 
 # =====================================================
@@ -145,26 +122,19 @@ def get_crop_category(crop_name):
 
 print("Loading crop labels...")
 
-
 if not LABELS_PATH.exists():
-
     raise RuntimeError(
         f"Labels file not found at: {LABELS_PATH}"
     )
-
 
 with open(
     LABELS_PATH,
     "r",
     encoding="utf-8",
 ) as file:
-
     labels = json.load(file)
 
-
-print(
-    f"Loaded {len(labels)} crop labels."
-)
+print(f"Loaded {len(labels)} crop labels.")
 
 
 # =====================================================
@@ -172,21 +142,16 @@ print(
 # =====================================================
 
 if not isinstance(labels, list):
-
     raise RuntimeError(
         "labels.json must contain a JSON array."
     )
 
-
 if len(labels) == 0:
-
     raise RuntimeError(
         "labels.json contains no crop labels."
     )
 
-
 if len(set(labels)) != len(labels):
-
     raise RuntimeError(
         "labels.json contains duplicate crop labels."
     )
@@ -198,39 +163,25 @@ if len(set(labels)) != len(labels):
 
 print("Loading crop recognition model...")
 
-
 if not MODEL_PATH.exists():
-
     raise RuntimeError(
         f"Crop model not found at: {MODEL_PATH}"
     )
-
 
 model = tf.keras.models.load_model(
     MODEL_PATH,
     compile=False,
 )
 
-
-print(
-    "Crop recognition model loaded successfully."
-)
+print("Crop recognition model loaded successfully.")
 
 
 # =====================================================
 # Model Information
 # =====================================================
 
-print(
-    "Input shape:",
-    model.input_shape,
-)
-
-
-print(
-    "Output shape:",
-    model.output_shape,
-)
+print("Input shape:", model.input_shape)
+print("Output shape:", model.output_shape)
 
 
 # =====================================================
@@ -238,26 +189,19 @@ print(
 # =====================================================
 
 try:
-
-    expected_classes = int(
-        model.output_shape[-1]
-    )
+    expected_classes = int(model.output_shape[-1])
 
 except (TypeError, ValueError):
-
     raise RuntimeError(
-        "Unable to determine the number of "
-        "output classes from the model."
+        "Unable to determine the number of output classes."
     )
 
 
 if expected_classes != len(labels):
-
     raise RuntimeError(
         f"Model outputs {expected_classes} classes, "
         f"but labels.json contains {len(labels)} labels."
     )
-
 
 print(
     f"Model and labels successfully matched: "
@@ -271,42 +215,65 @@ print(
 
 model_input_shape = model.input_shape
 
-
 if len(model_input_shape) != 4:
-
     raise RuntimeError(
         "Expected model input shape like "
-        "(None, height, width, channels), "
-        f"but received {model_input_shape}"
+        "(None, height, width, channels)."
     )
-
 
 input_height = model_input_shape[1]
 input_width = model_input_shape[2]
 input_channels = model_input_shape[3]
 
-
 if input_height is None or input_width is None:
-
     raise RuntimeError(
         "Model input height/width must be defined."
     )
 
-
 if input_channels != 3:
-
     raise RuntimeError(
-        f"Expected 3 input channels (RGB), "
+        f"Expected 3 input channels, "
         f"but model expects {input_channels}."
     )
 
-
 print(
     f"Image input size: "
-    f"{input_width} x "
-    f"{input_height} x "
-    f"{input_channels}"
+    f"{input_width} x {input_height} x {input_channels}"
 )
+
+
+# =====================================================
+# TensorFlow Warm-Up
+# =====================================================
+
+print("Warming up TensorFlow model...")
+
+try:
+
+    dummy_image = np.zeros(
+        (
+            1,
+            int(input_height),
+            int(input_width),
+            3,
+        ),
+        dtype=np.float32,
+    )
+
+    # Direct model call is faster for single-image inference
+    _ = model(
+        dummy_image,
+        training=False,
+    ).numpy()
+
+    print("TensorFlow model warm-up completed.")
+
+except Exception as error:
+
+    print(
+        "Model warm-up failed:",
+        str(error),
+    )
 
 
 # =====================================================
@@ -319,26 +286,20 @@ def health_check():
     return jsonify(
         {
             "success": True,
-
             "message":
                 "Hawkins Farm Crop Recognition API Running",
-
             "model_loaded":
                 model is not None,
-
             "classes":
                 len(labels),
-
             "input_size":
                 {
                     "width":
-                        input_width,
-
+                        int(input_width),
                     "height":
-                        input_height,
-
+                        int(input_height),
                     "channels":
-                        input_channels,
+                        int(input_channels),
                 },
         }
     )
@@ -351,6 +312,8 @@ def health_check():
 @app.post("/predict")
 def predict_crop():
 
+    print("Prediction request received.")
+
     # =================================================
     # Validate Image
     # =================================================
@@ -360,15 +323,11 @@ def predict_crop():
         return jsonify(
             {
                 "success": False,
-
-                "message":
-                    "No image uploaded.",
+                "message": "No image uploaded.",
             }
         ), 400
 
-
     image_file = request.files["image"]
-
 
     if (
         not image_file
@@ -378,32 +337,26 @@ def predict_crop():
         return jsonify(
             {
                 "success": False,
-
                 "message":
                     "Please select an image.",
             }
         ), 400
 
-
     try:
+
+        print("Opening image...")
 
         # =============================================
         # Open Image
         # =============================================
 
-        image = Image.open(
-            image_file
-        )
-
+        image = Image.open(image_file)
 
         # =============================================
-        # Convert To RGB
+        # Convert RGB
         # =============================================
 
-        image = image.convert(
-            "RGB"
-        )
-
+        image = image.convert("RGB")
 
         # =============================================
         # Resize
@@ -413,9 +366,9 @@ def predict_crop():
             (
                 int(input_width),
                 int(input_height),
-            )
+            ),
+            Image.Resampling.BILINEAR,
         )
-
 
         # =============================================
         # Convert To NumPy
@@ -426,26 +379,25 @@ def predict_crop():
             dtype=np.float32,
         )
 
-
         # =============================================
-        # Validate Image Shape
+        # Validate Image
         # =============================================
 
-        if image_array.shape != (
+        expected_shape = (
             int(input_height),
             int(input_width),
             3,
-        ):
+        )
+
+        if image_array.shape != expected_shape:
 
             return jsonify(
                 {
                     "success": False,
-
                     "message":
                         "Invalid image dimensions.",
                 }
             ), 400
-
 
         # =============================================
         # Add Batch Dimension
@@ -456,19 +408,21 @@ def predict_crop():
             axis=0,
         )
 
+        print("Running model inference...")
 
         # =============================================
         # Model Prediction
         # =============================================
 
-        predictions = model.predict(
+        # Direct model call instead of model.predict()
+        predictions = model(
             image_array,
-            verbose=0,
-        )
-
+            training=False,
+        ).numpy()
 
         probabilities = predictions[0]
 
+        print("Model inference completed.")
 
         # =============================================
         # Validate Prediction Output
@@ -483,7 +437,6 @@ def predict_crop():
                 f"{len(labels)} labels."
             )
 
-
         # =============================================
         # Best Prediction
         # =============================================
@@ -492,28 +445,15 @@ def predict_crop():
             np.argmax(probabilities)
         )
 
-
         confidence = float(
-            probabilities[predicted_index]
-            * 100
+            probabilities[predicted_index] * 100
         )
 
+        predicted_crop = labels[predicted_index]
 
-        predicted_crop = labels[
-            predicted_index
-        ]
-
-
-        # =============================================
-        # Category
-        # =============================================
-
-        predicted_category = (
-            get_crop_category(
-                predicted_crop
-            )
+        predicted_category = get_crop_category(
+            predicted_crop
         )
-
 
         # =============================================
         # Top 3 Predictions
@@ -524,14 +464,11 @@ def predict_crop():
             len(probabilities),
         )
 
-
         top_indices = np.argsort(
             probabilities
         )[-top_count:][::-1]
 
-
         top_predictions = []
-
 
         for index in top_indices:
 
@@ -539,10 +476,8 @@ def predict_crop():
 
             crop_name = labels[index]
 
-            crop_category = (
-                get_crop_category(
-                    crop_name
-                )
+            crop_category = get_crop_category(
+                crop_name
             )
 
             top_predictions.append(
@@ -556,46 +491,45 @@ def predict_crop():
                     "confidence":
                         round(
                             float(
-                                probabilities[index]
-                                * 100
+                                probabilities[index] * 100
                             ),
                             2,
                         ),
                 }
             )
 
-
         # =============================================
-        # Final Response
+        # Response
         # =============================================
 
-        return jsonify(
-            {
-                "success": True,
+        response = {
+            "success": True,
 
-                "prediction":
-                    {
-                        "crop":
-                            predicted_crop,
+            "prediction": {
+                "crop":
+                    predicted_crop,
 
-                        "category":
-                            predicted_category,
+                "category":
+                    predicted_category,
 
-                        "confidence":
-                            round(
-                                confidence,
-                                2,
-                            ),
-                    },
+                "confidence":
+                    round(confidence, 2),
+            },
 
-                "topPredictions":
-                    top_predictions,
+            "topPredictions":
+                top_predictions,
 
-                "classes":
-                    len(labels),
-            }
+            "classes":
+                len(labels),
+        }
+
+        print(
+            "Prediction:",
+            predicted_crop,
+            f"({confidence:.2f}%)",
         )
 
+        return jsonify(response)
 
     except Exception as error:
 
@@ -603,7 +537,6 @@ def predict_crop():
             "Crop prediction error:",
             str(error),
         )
-
 
         return jsonify(
             {
@@ -628,9 +561,13 @@ if __name__ == "__main__":
         "Starting Hawkins Farm Crop Recognition API..."
     )
 
-
     app.run(
         host="0.0.0.0",
-        port=8001,
-        debug=True,
+        port=int(
+            os.environ.get(
+                "PORT",
+                8001,
+            )
+        ),
+        debug=False,
     )
