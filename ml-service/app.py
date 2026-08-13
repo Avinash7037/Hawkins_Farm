@@ -15,11 +15,7 @@ from PIL import Image
 
 BASE_DIR = Path(__file__).resolve().parent
 
-MODEL_PATH = (
-    BASE_DIR
-    / "models"
-    / "crop_model_49.keras"
-)
+MODEL_PATH = BASE_DIR / "models" / "crop_model_49.keras"
 
 LABELS_PATH = BASE_DIR / "labels.json"
 
@@ -35,16 +31,13 @@ app = Flask(__name__)
 # CORS
 # =====================================================
 
-CORS(
-    app,
-    resources={
-        r"/*": {
-            "origins": [
-                "http://localhost:5173",
-            ]
-        }
-    },
-)
+# Allow frontend requests during local development
+# and deployment.
+#
+# For production, this can later be restricted to the
+# exact Render frontend URL.
+
+CORS(app)
 
 
 # =====================================================
