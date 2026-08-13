@@ -11,6 +11,7 @@ const {
   deleteProduct,
   getAllProductsAdmin,
   updateProductStatusAdmin,
+  restockProduct,
 } = require("../controllers/productController");
 
 const { protect, authorize } = require("../middleware/authMiddleware");
@@ -78,5 +79,11 @@ router.put("/:id", protect, authorize("farmer"), updateProduct);
 // =====================================================
 
 router.delete("/:id", protect, authorize("farmer"), deleteProduct);
+
+// =====================================================
+// Restock Product
+// =====================================================
+
+router.put("/:id/restock", protect, authorize("farmer"), restockProduct);
 
 module.exports = router;

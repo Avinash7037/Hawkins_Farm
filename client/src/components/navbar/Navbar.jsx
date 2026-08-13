@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { Menu } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 
 import Logo from "../common/Logo";
@@ -9,6 +9,7 @@ import MobileMenu from "./MobileMenu";
 
 import { logout } from "../../features/auth/authSlice";
 import NotificationBell from "../../features/notifications/components/NotificationBell";
+import ThemeToggle from "../common/ThemeToggle";
 
 function Navbar() {
   const [open, setOpen] = useState(false);
@@ -27,69 +28,172 @@ function Navbar() {
     setOpen(false);
   };
 
+  // =====================================================
+  // Profile Path
+  // =====================================================
+
+  const profilePath = user?.role === "farmer" ? "/farmer/profile" : "/profile";
+
+  // =====================================================
+  // Render
+  // =====================================================
+
   return (
-    <header className="border-b bg-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+    <header
+      className="
+        border-b border-gray-200
+        bg-white
+        transition-colors duration-300
+        dark:border-gray-800
+        dark:bg-gray-950
+      "
+    >
+      <div
+        className="
+          mx-auto
+          flex
+          w-full
+          max-w-[1600px]
+          items-center
+          px-4
+          py-4
+          sm:px-6
+          lg:px-8
+        "
+      >
         {/* =================================================
             Logo
         ================================================= */}
 
-        <Logo />
+        <div className="shrink-0">
+          <Logo />
+        </div>
 
         {/* =================================================
             Desktop Navigation
         ================================================= */}
 
-        <nav className="hidden items-center gap-8 md:flex">
-          <NavLinks />
+        <nav
+          className="
+            ml-12
+            hidden
+            min-w-0
+            flex-1
+            items-center
+            justify-between
+            md:flex
+          "
+        >
+          {/* =================================================
+              Main Navigation
+          ================================================= */}
 
-          {!user ? (
-            <>
-              {/* =========================================
-                  Guest User
-              ========================================= */}
+          <div className="flex min-w-0 items-center gap-5 lg:gap-6">
+            <NavLinks />
+          </div>
 
-              <Link
-                to="/login"
-                className="font-medium text-gray-700 transition hover:text-emerald-600"
-              >
-                Login
-              </Link>
+          {/* =================================================
+              Right Side Actions
+          ================================================= */}
 
-              <Link
-                to="/register"
-                className="rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700"
-              >
-                Get Started
-              </Link>
-            </>
-          ) : (
-            <>
-              {/* =========================================
-                  Notification Bell
-              ========================================= */}
+          <div className="ml-6 flex shrink-0 items-center gap-5">
+            {/* =================================================
+                Theme Toggle
+            ================================================= */}
 
-              <NotificationBell />
+            <ThemeToggle />
 
-              {/* =========================================
-                  Logged-in User
-              ========================================= */}
+            {!user ? (
+              <>
+                {/* =================================================
+                    Login
+                ================================================= */}
 
-              <span className="font-medium text-gray-700">Hi, {user.name}</span>
+                <Link
+                  to="/login"
+                  className="
+                    whitespace-nowrap
+                    font-medium
+                    text-gray-700
+                    transition
+                    hover:text-emerald-600
+                    dark:text-gray-300
+                    dark:hover:text-emerald-400
+                  "
+                >
+                  Login
+                </Link>
 
-              {/* =========================================
+                {/* =================================================
+                    Get Started
+                ================================================= */}
+
+                <Link
+                  to="/register"
+                  className="
+                    whitespace-nowrap
+                    rounded-xl
+                    bg-emerald-600
+                    px-5
+                    py-3
+                    font-semibold
+                    text-white
+                    transition
+                    hover:bg-emerald-700
+                  "
+                >
+                  Get Started
+                </Link>
+              </>
+            ) : (
+              <>
+                {/* =================================================
+                    Notification Bell
+                ================================================= */}
+
+                <NotificationBell />
+
+                {/* =================================================
+                    Profile
+                ================================================= */}
+
+                <Link
+                  to={profilePath}
+                  className="
+                    whitespace-nowrap
+                    font-medium
+                    text-gray-700
+                    transition
+                    hover:text-emerald-600
+                    dark:text-gray-300
+                    dark:hover:text-emerald-400
+                  "
+                >
+                  Hi, {user.name}
+                </Link>
+
+                {/* =================================================
+                    Logout
+                ================================================= */}
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="
+                    whitespace-nowrap
+                    font-medium
+                    text-red-600
+                    transition
+                    hover:text-red-700
+                    dark:text-red-400
+                    dark:hover:text-red-300
+                  "
+                >
                   Logout
-              ========================================= */}
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="font-medium text-red-600 transition hover:text-red-700"
-              >
-                Logout
-              </button>
-            </>
-          )}
+                </button>
+              </>
+            )}
+          </div>
         </nav>
 
         {/* =================================================
@@ -98,7 +202,17 @@ function Navbar() {
 
         <button
           type="button"
-          className="rounded-lg p-2 transition hover:bg-gray-100 md:hidden"
+          className="
+            ml-auto
+            rounded-lg
+            p-2
+            text-gray-700
+            transition
+            hover:bg-gray-100
+            dark:text-gray-200
+            dark:hover:bg-gray-800
+            md:hidden
+          "
           onClick={() => setOpen(!open)}
           aria-label="Toggle navigation menu"
           aria-expanded={open}

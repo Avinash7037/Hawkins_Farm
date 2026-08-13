@@ -35,6 +35,18 @@ export const updateProduct = async ({ id, data }) => {
 };
 
 // =====================================================
+// Restock Product
+// =====================================================
+
+export const restockProduct = async ({ id, quantity }) => {
+  const response = await api.put(`/products/${id}/restock`, {
+    quantity,
+  });
+
+  return response.data;
+};
+
+// =====================================================
 // Delete Product
 // =====================================================
 

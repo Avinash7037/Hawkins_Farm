@@ -1,10 +1,14 @@
 const mongoose = require("mongoose");
 
+// =====================================================
+// Notification Schema
+// =====================================================
+
 const notificationSchema = new mongoose.Schema(
   {
-    // =====================================================
+    // =================================================
     // Recipient
-    // =====================================================
+    // =================================================
 
     recipient: {
       type: mongoose.Schema.Types.ObjectId,
@@ -13,13 +17,15 @@ const notificationSchema = new mongoose.Schema(
       index: true,
     },
 
-    // =====================================================
+    // =================================================
     // Notification Type
-    // =====================================================
+    // =================================================
 
     type: {
       type: String,
+
       enum: [
+        // Orders
         "ORDER_PLACED",
         "ORDER_ACCEPTED",
         "ORDER_REJECTED",
@@ -28,13 +34,24 @@ const notificationSchema = new mongoose.Schema(
         "ORDER_DELIVERED",
         "ORDER_CANCELLED",
         "ORDER_REFUNDED",
+
+        // Stock
+        "LOW_STOCK",
+        "STOCK_EMPTY",
+
+        // Auctions
+        "AUCTION_STARTED",
+        "AUCTION_ENDED",
+        "AUCTION_WON",
+        "AUCTION_UNSOLD",
       ],
+
       required: true,
     },
 
-    // =====================================================
+    // =================================================
     // Title
-    // =====================================================
+    // =================================================
 
     title: {
       type: String,
@@ -43,9 +60,9 @@ const notificationSchema = new mongoose.Schema(
       maxlength: 150,
     },
 
-    // =====================================================
+    // =================================================
     // Message
-    // =====================================================
+    // =================================================
 
     message: {
       type: String,
@@ -54,9 +71,9 @@ const notificationSchema = new mongoose.Schema(
       maxlength: 500,
     },
 
-    // =====================================================
+    // =================================================
     // Related Order
-    // =====================================================
+    // =================================================
 
     order: {
       type: mongoose.Schema.Types.ObjectId,
@@ -64,9 +81,29 @@ const notificationSchema = new mongoose.Schema(
       default: null,
     },
 
-    // =====================================================
+    // =================================================
+    // Related Product
+    // =================================================
+
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      default: null,
+    },
+
+    // =================================================
+    // Related Auction
+    // =================================================
+
+    auction: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Auction",
+      default: null,
+    },
+
+    // =================================================
     // Read Status
-    // =====================================================
+    // =================================================
 
     isRead: {
       type: Boolean,
@@ -85,7 +122,7 @@ const notificationSchema = new mongoose.Schema(
 );
 
 // =====================================================
-// Index
+// Indexes
 // =====================================================
 
 notificationSchema.index({
@@ -98,5 +135,23 @@ notificationSchema.index({
   recipient: 1,
   createdAt: -1,
 });
+
+notificationSchema.index({
+  recipient: 1,
+  type: 1,
+  product: 1,
+  createdAt: -1,
+});
+
+notificationSchema.index({
+  recipient: 1,
+  type: 1,
+  auction: 1,
+  createdAt: -1,
+});
+
+// =====================================================
+// Export
+// =====================================================
 
 module.exports = mongoose.model("Notification", notificationSchema);

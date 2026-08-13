@@ -8,17 +8,36 @@ function FeaturedProducts() {
     sort: "newest",
   });
 
+  // =====================================================
+  // Loading State
+  // =====================================================
+
   if (loading) {
     return (
-      <section className="py-24">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-4xl font-bold mb-12">Featured Products</h2>
+      <section className="bg-white py-24 dark:bg-gray-950">
+        <div className="mx-auto max-w-7xl px-6">
+          <h2
+            className="
+              mb-12 text-4xl font-bold
+              text-gray-900
+              dark:text-white
+            "
+          >
+            Featured Products
+          </h2>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, index) => (
               <div
                 key={index}
-                className="h-[420px] rounded-3xl bg-gray-200 animate-pulse"
+                className="
+                  h-[420px]
+                  animate-pulse
+                  rounded-3xl
+                  bg-gray-200
+
+                  dark:bg-gray-800
+                "
               />
             ))}
           </div>
@@ -27,42 +46,109 @@ function FeaturedProducts() {
     );
   }
 
+  // =====================================================
+  // Error State
+  // =====================================================
+
   if (error) {
     return (
-      <section className="py-24">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <h2 className="text-red-600 text-xl">{error}</h2>
+      <section className="bg-white py-24 dark:bg-gray-950">
+        <div className="mx-auto max-w-7xl px-6 text-center">
+          <h2
+            className="
+              text-xl
+              text-red-600
+              dark:text-red-400
+            "
+          >
+            {error}
+          </h2>
         </div>
       </section>
     );
   }
 
-  return (
-    <section className="py-24 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex justify-between items-center mb-14">
-          <div>
-            <h2 className="text-4xl font-bold">Featured Products</h2>
+  // =====================================================
+  // Main Content
+  // =====================================================
 
-            <p className="mt-3 text-gray-600">
+  return (
+    <section
+      className="
+        bg-gray-50 py-24
+        dark:bg-gray-950
+      "
+    >
+      <div className="mx-auto max-w-7xl px-6">
+        {/* =================================================
+            Section Header
+        ================================================= */}
+
+        <div className="mb-14 flex items-center justify-between">
+          <div>
+            <h2
+              className="
+                text-4xl font-bold
+                text-gray-900
+
+                dark:text-white
+              "
+            >
+              Featured Products
+            </h2>
+
+            <p
+              className="
+                mt-3
+                text-gray-600
+
+                dark:text-gray-300
+              "
+            >
               Fresh products directly from verified farmers.
             </p>
           </div>
 
+          {/* =================================================
+              View All
+          ================================================= */}
+
           <Link
             to="/products"
-            className="text-emerald-600 font-semibold hover:underline"
+            className="
+              font-semibold
+              text-emerald-600
+              transition
+              hover:underline
+
+              dark:text-emerald-400
+            "
           >
             View All →
           </Link>
         </div>
 
+        {/* =================================================
+            Empty State
+        ================================================= */}
+
         {products.length === 0 ? (
-          <div className="text-center text-gray-500">
+          <div
+            className="
+              text-center
+              text-gray-500
+
+              dark:text-gray-400
+            "
+          >
             No products available.
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          /* =================================================
+              Products
+          ================================================= */
+
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
               <ProductCard key={product._id} product={product} />
             ))}

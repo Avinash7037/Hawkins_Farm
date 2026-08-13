@@ -12,15 +12,11 @@ const INITIAL_FORM_DATA = {
   freshness: "Fresh",
 };
 
-function AddProductModal({ isOpen, onClose, onSave }) {
+function AddProductModal({ isOpen, onClose, onSave, initialCrop = "" }) {
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
-
   const [images, setImages] = useState([]);
-
   const [previews, setPreviews] = useState([]);
-
   const [errors, setErrors] = useState({});
-
   const [submitting, setSubmitting] = useState(false);
 
   // =====================================================
@@ -28,7 +24,12 @@ function AddProductModal({ isOpen, onClose, onSave }) {
   // =====================================================
 
   const resetForm = () => {
-    setFormData(INITIAL_FORM_DATA);
+    setFormData({
+      ...INITIAL_FORM_DATA,
+      name: initialCrop,
+      category: initialCrop,
+    });
+
     setImages([]);
     setPreviews([]);
     setErrors({});
@@ -43,7 +44,7 @@ function AddProductModal({ isOpen, onClose, onSave }) {
     if (isOpen) {
       resetForm();
     }
-  }, [isOpen]);
+  }, [isOpen, initialCrop]);
 
   // =====================================================
   // Clean Preview URLs
@@ -86,10 +87,6 @@ function AddProductModal({ isOpen, onClose, onSave }) {
       return;
     }
 
-    // -------------------------------------------------
-    // Maximum 5 images
-    // -------------------------------------------------
-
     if (selectedFiles.length > 5) {
       setErrors((prev) => ({
         ...prev,
@@ -99,10 +96,6 @@ function AddProductModal({ isOpen, onClose, onSave }) {
       e.target.value = "";
       return;
     }
-
-    // -------------------------------------------------
-    // Validate file types
-    // -------------------------------------------------
 
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -120,10 +113,6 @@ function AddProductModal({ isOpen, onClose, onSave }) {
       return;
     }
 
-    // -------------------------------------------------
-    // Validate file size
-    // -------------------------------------------------
-
     const maxSize = 5 * 1024 * 1024;
 
     const oversizedFile = selectedFiles.find((file) => file.size > maxSize);
@@ -138,9 +127,9 @@ function AddProductModal({ isOpen, onClose, onSave }) {
       return;
     }
 
-    // -------------------------------------------------
-    // Create previews
-    // -------------------------------------------------
+    previews.forEach((url) => {
+      URL.revokeObjectURL(url);
+    });
 
     const newPreviews = selectedFiles.map((file) => URL.createObjectURL(file));
 
@@ -151,6 +140,8 @@ function AddProductModal({ isOpen, onClose, onSave }) {
       ...prev,
       images: "",
     }));
+
+    e.target.value = "";
   };
 
   // =====================================================
@@ -225,24 +216,13 @@ function AddProductModal({ isOpen, onClose, onSave }) {
     const data = new FormData();
 
     data.append("name", formData.name.trim());
-
     data.append("description", formData.description.trim());
-
     data.append("category", formData.category.trim());
-
     data.append("price", String(Number(formData.price)));
-
     data.append("quantity", String(Number(formData.quantity)));
-
     data.append("unit", formData.unit);
-
     data.append("location", formData.location.trim());
-
     data.append("freshness", formData.freshness);
-
-    // -------------------------------------------------
-    // Add images
-    // -------------------------------------------------
 
     images.forEach((image) => {
       data.append("images", image);
@@ -252,12 +232,6 @@ function AddProductModal({ isOpen, onClose, onSave }) {
 
     try {
       await onSave(data);
-
-      // The parent closes the modal after
-      // a successful Redux action.
-      //
-      // If the modal is still open, keep the
-      // form state instead of destroying user input.
     } catch {
       // Parent/Redux handles the actual error.
     } finally {
@@ -288,16 +262,16 @@ function AddProductModal({ isOpen, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-xl">
-        {/* =================================================
-            Header
-        ================================================= */}
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-xl dark:bg-gray-900">
+        {/* Header */}
 
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-6 py-4">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-900">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Add Product</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Add Product
+            </h2>
 
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Add a product to your Hawkins Farm marketplace.
             </p>
           </div>
@@ -306,22 +280,20 @@ function AddProductModal({ isOpen, onClose, onSave }) {
             type="button"
             onClick={handleClose}
             disabled={submitting}
-            className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
             aria-label="Close"
           >
             <X size={22} />
           </button>
         </div>
 
-        {/* =================================================
-            Form
-        ================================================= */}
+        {/* Form */}
 
         <form onSubmit={handleSubmit} className="space-y-5 p-6">
           {/* Product Name */}
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Product Name
             </label>
 
@@ -331,20 +303,24 @@ function AddProductModal({ isOpen, onClose, onSave }) {
               onChange={handleChange}
               placeholder="e.g. Fresh Tomatoes"
               disabled={submitting}
-              className={`w-full rounded-lg border p-3 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 ${
-                errors.name ? "border-red-400" : "border-gray-300"
+              className={`w-full rounded-lg border bg-white p-3 text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-green-900/40 ${
+                errors.name
+                  ? "border-red-400"
+                  : "border-gray-300 dark:border-gray-600"
               }`}
             />
 
             {errors.name && (
-              <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {errors.name}
+              </p>
             )}
           </div>
 
           {/* Description */}
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Description
             </label>
 
@@ -355,13 +331,17 @@ function AddProductModal({ isOpen, onClose, onSave }) {
               onChange={handleChange}
               placeholder="Describe your product..."
               disabled={submitting}
-              className={`w-full rounded-lg border p-3 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 ${
-                errors.description ? "border-red-400" : "border-gray-300"
+              className={`w-full rounded-lg border bg-white p-3 text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-green-900/40 ${
+                errors.description
+                  ? "border-red-400"
+                  : "border-gray-300 dark:border-gray-600"
               }`}
             />
 
             {errors.description && (
-              <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {errors.description}
+              </p>
             )}
           </div>
 
@@ -369,7 +349,7 @@ function AddProductModal({ isOpen, onClose, onSave }) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Category
               </label>
 
@@ -377,20 +357,24 @@ function AddProductModal({ isOpen, onClose, onSave }) {
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                placeholder="e.g. Vegetables"
+                placeholder="e.g. Mango"
                 disabled={submitting}
-                className={`w-full rounded-lg border p-3 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 ${
-                  errors.category ? "border-red-400" : "border-gray-300"
+                className={`w-full rounded-lg border bg-white p-3 text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-green-900/40 ${
+                  errors.category
+                    ? "border-red-400"
+                    : "border-gray-300 dark:border-gray-600"
                 }`}
               />
 
               {errors.category && (
-                <p className="mt-1 text-sm text-red-600">{errors.category}</p>
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.category}
+                </p>
               )}
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Unit
               </label>
 
@@ -399,16 +383,12 @@ function AddProductModal({ isOpen, onClose, onSave }) {
                 value={formData.unit}
                 onChange={handleChange}
                 disabled={submitting}
-                className="w-full rounded-lg border border-gray-300 p-3 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                className="w-full rounded-lg border border-gray-300 bg-white p-3 text-gray-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:ring-green-900/40"
               >
                 <option value="kg">Kilogram (kg)</option>
-
                 <option value="g">Gram (g)</option>
-
                 <option value="piece">Piece</option>
-
                 <option value="dozen">Dozen</option>
-
                 <option value="litre">Litre</option>
               </select>
             </div>
@@ -418,7 +398,7 @@ function AddProductModal({ isOpen, onClose, onSave }) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Price (₹)
               </label>
 
@@ -431,18 +411,22 @@ function AddProductModal({ isOpen, onClose, onSave }) {
                 onChange={handleChange}
                 placeholder="0.00"
                 disabled={submitting}
-                className={`w-full rounded-lg border p-3 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 ${
-                  errors.price ? "border-red-400" : "border-gray-300"
+                className={`w-full rounded-lg border bg-white p-3 text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-green-900/40 ${
+                  errors.price
+                    ? "border-red-400"
+                    : "border-gray-300 dark:border-gray-600"
                 }`}
               />
 
               {errors.price && (
-                <p className="mt-1 text-sm text-red-600">{errors.price}</p>
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.price}
+                </p>
               )}
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Quantity
               </label>
 
@@ -455,13 +439,17 @@ function AddProductModal({ isOpen, onClose, onSave }) {
                 onChange={handleChange}
                 placeholder="0"
                 disabled={submitting}
-                className={`w-full rounded-lg border p-3 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 ${
-                  errors.quantity ? "border-red-400" : "border-gray-300"
+                className={`w-full rounded-lg border bg-white p-3 text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-green-900/40 ${
+                  errors.quantity
+                    ? "border-red-400"
+                    : "border-gray-300 dark:border-gray-600"
                 }`}
               />
 
               {errors.quantity && (
-                <p className="mt-1 text-sm text-red-600">{errors.quantity}</p>
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.quantity}
+                </p>
               )}
             </div>
           </div>
@@ -469,7 +457,7 @@ function AddProductModal({ isOpen, onClose, onSave }) {
           {/* Location */}
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Location
             </label>
 
@@ -479,20 +467,24 @@ function AddProductModal({ isOpen, onClose, onSave }) {
               onChange={handleChange}
               placeholder="e.g. Nashik, Maharashtra"
               disabled={submitting}
-              className={`w-full rounded-lg border p-3 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 ${
-                errors.location ? "border-red-400" : "border-gray-300"
+              className={`w-full rounded-lg border bg-white p-3 text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-green-900/40 ${
+                errors.location
+                  ? "border-red-400"
+                  : "border-gray-300 dark:border-gray-600"
               }`}
             />
 
             {errors.location && (
-              <p className="mt-1 text-sm text-red-600">{errors.location}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {errors.location}
+              </p>
             )}
           </div>
 
           {/* Freshness */}
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Freshness
             </label>
 
@@ -501,14 +493,11 @@ function AddProductModal({ isOpen, onClose, onSave }) {
               value={formData.freshness}
               onChange={handleChange}
               disabled={submitting}
-              className="w-full rounded-lg border border-gray-300 p-3 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
+              className="w-full rounded-lg border border-gray-300 bg-white p-3 text-gray-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:ring-green-900/40"
             >
               <option value="Fresh">Fresh</option>
-
               <option value="1 Day">1 Day</option>
-
               <option value="2 Days">2 Days</option>
-
               <option value="3+ Days">3+ Days</option>
             </select>
           </div>
@@ -516,22 +505,24 @@ function AddProductModal({ isOpen, onClose, onSave }) {
           {/* Images */}
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Product Images
             </label>
 
             <label
-              className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition hover:border-green-500 hover:bg-green-50 ${
-                errors.images ? "border-red-400" : "border-gray-300"
+              className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-950/20 ${
+                errors.images
+                  ? "border-red-400"
+                  : "border-gray-300 dark:border-gray-600"
               }`}
             >
-              <Upload size={30} className="text-gray-400" />
+              <Upload size={30} className="text-gray-400 dark:text-gray-500" />
 
-              <span className="mt-2 font-medium text-gray-700">
+              <span className="mt-2 font-medium text-gray-700 dark:text-gray-300">
                 Click to select images
               </span>
 
-              <span className="mt-1 text-sm text-gray-500">
+              <span className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 JPG, JPEG, PNG or WEBP • Maximum 5 images • 5 MB each
               </span>
 
@@ -547,17 +538,17 @@ function AddProductModal({ isOpen, onClose, onSave }) {
             </label>
 
             {errors.images && (
-              <p className="mt-1 text-sm text-red-600">{errors.images}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {errors.images}
+              </p>
             )}
-
-            {/* Image Previews */}
 
             {previews.length > 0 && (
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
                 {previews.map((preview, index) => (
                   <div
                     key={preview}
-                    className="overflow-hidden rounded-lg border"
+                    className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
                   >
                     <img
                       src={preview}
@@ -570,16 +561,14 @@ function AddProductModal({ isOpen, onClose, onSave }) {
             )}
           </div>
 
-          {/* =================================================
-              Actions
-          ================================================= */}
+          {/* Actions */}
 
-          <div className="flex justify-end gap-3 border-t pt-5">
+          <div className="flex justify-end gap-3 border-t border-gray-200 pt-5 dark:border-gray-700">
             <button
               type="button"
               onClick={handleClose}
               disabled={submitting}
-              className="rounded-lg bg-gray-200 px-5 py-2.5 font-medium text-gray-700 transition hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg bg-gray-200 px-5 py-2.5 font-medium text-gray-700 transition hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
             >
               Cancel
             </button>

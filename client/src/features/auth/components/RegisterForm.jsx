@@ -73,7 +73,7 @@ function RegisterForm() {
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-4 top-[44px] text-gray-500 hover:text-emerald-600"
+          className="absolute right-4 top-[44px] text-gray-500 transition hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400"
         >
           {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
         </button>
@@ -92,41 +92,45 @@ function RegisterForm() {
         <button
           type="button"
           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-          className="absolute right-4 top-[44px] text-gray-500 hover:text-emerald-600"
+          className="absolute right-4 top-[44px] text-gray-500 transition hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400"
         >
           {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
         </button>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
           Register As
         </label>
 
         <select
           {...register("role")}
-          className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none"
+          className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-emerald-500 dark:focus:ring-emerald-900/40"
         >
           <option value="buyer">Buyer</option>
           <option value="farmer">Farmer</option>
         </select>
 
         {errors.role && (
-          <p className="mt-2 text-sm text-red-500">{errors.role.message}</p>
+          <p className="mt-2 text-sm text-red-500 dark:text-red-400">
+            {errors.role.message}
+          </p>
         )}
       </div>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && (
+        <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+      )}
 
       <Button type="submit" loading={loading}>
         Create Account
       </Button>
 
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-gray-600 dark:text-gray-400">
         Already have an account?{" "}
         <Link
           to="/login"
-          className="font-semibold text-emerald-600 hover:underline"
+          className="font-semibold text-emerald-600 hover:underline dark:text-emerald-400"
         >
           Login
         </Link>

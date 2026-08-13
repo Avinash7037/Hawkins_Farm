@@ -12,7 +12,11 @@ const {
 const {
   registerUser,
   loginUser,
+  forgotPassword,
+  resetPassword,
   getProfile,
+  updateProfile,
+  changePassword,
   getAllUsers,
   updateUserStatus,
 } = require("../controllers/userController");
@@ -26,19 +30,33 @@ router.post("/register", registerValidation, registerUser);
 router.post("/login", loginValidation, loginUser);
 
 // =====================================================
-// Authenticated User
+// Forgot Password
+// =====================================================
+
+router.post("/forgot-password", forgotPassword);
+
+// =====================================================
+// Reset Password
+// =====================================================
+
+router.post("/reset-password/:token", resetPassword);
+
+// =====================================================
+// Profile
 // =====================================================
 
 router.get("/profile", protect, getProfile);
+
+router.put("/profile", protect, updateProfile);
+
+router.put("/profile/password", protect, changePassword);
 
 // =====================================================
 // Admin User Management
 // =====================================================
 
-// Get all users
 router.get("/admin/users", protect, authorize("admin"), getAllUsers);
 
-// Activate / Deactivate user
 router.put(
   "/admin/users/:id/status",
   protect,
@@ -55,5 +73,9 @@ router.get("/farmer-dashboard", protect, authorize("farmer"), (req, res) => {
     message: "Welcome Farmer!",
   });
 });
+
+// =====================================================
+// Export
+// =====================================================
 
 module.exports = router;

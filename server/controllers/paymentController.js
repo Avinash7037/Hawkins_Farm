@@ -11,6 +11,51 @@ const {
 } = require("../services/checkoutService");
 
 // =====================================================
+// Validate Delivery Address
+// =====================================================
+
+const validateDeliveryAddress = (deliveryAddress) => {
+  if (!deliveryAddress || typeof deliveryAddress !== "object") {
+    throw new Error("Delivery address is required");
+  }
+
+  const requiredFields = [
+    "fullName",
+    "phone",
+    "addressLine1",
+    "city",
+    "state",
+    "postalCode",
+  ];
+
+  for (const field of requiredFields) {
+    if (
+      !deliveryAddress[field] ||
+      typeof deliveryAddress[field] !== "string" ||
+      !deliveryAddress[field].trim()
+    ) {
+      throw new Error(`Delivery address ${field} is required`);
+    }
+  }
+
+  return {
+    fullName: deliveryAddress.fullName.trim(),
+
+    phone: deliveryAddress.phone.trim(),
+
+    addressLine1: deliveryAddress.addressLine1.trim(),
+
+    addressLine2: deliveryAddress.addressLine2?.trim() || "",
+
+    city: deliveryAddress.city.trim(),
+
+    state: deliveryAddress.state.trim(),
+
+    postalCode: deliveryAddress.postalCode.trim(),
+  };
+};
+
+// =====================================================
 // Create Checkout
 // =====================================================
 
@@ -19,13 +64,17 @@ const createPaymentOrder = async (req, res) => {
     const { deliveryAddress, paymentMethod } = req.body;
 
     // =================================================
-    // Validate Address
+    // Validate Delivery Address
     // =================================================
 
-    if (!deliveryAddress?.trim()) {
+    let deliveryAddressSnapshot;
+
+    try {
+      deliveryAddressSnapshot = validateDeliveryAddress(deliveryAddress);
+    } catch (addressError) {
       return res.status(400).json({
         success: false,
-        message: "Delivery address is required",
+        message: addressError.message,
       });
     }
 
@@ -170,7 +219,7 @@ const createPaymentOrder = async (req, res) => {
     const checkout = await Checkout.create({
       buyer: req.user._id,
 
-      deliveryAddress: deliveryAddress.trim(),
+      deliveryAddress: deliveryAddressSnapshot,
 
       paymentMethod,
 
@@ -190,10 +239,6 @@ const createPaymentOrder = async (req, res) => {
     if (paymentMethod === "COD") {
       const orders = await completeCODCheckout({
         checkoutId: checkout._id,
-
-        // ---------------------------------------------
-        // Socket.IO
-        // ---------------------------------------------
 
         io: req.app.get("io"),
       });
@@ -247,6 +292,7 @@ const createPaymentOrder = async (req, res) => {
 
     return res.status(500).json({
       success: false,
+
       message: error.message,
     });
   }
@@ -262,7 +308,7 @@ const verifyPayment = async (req, res) => {
       req.body;
 
     // =================================================
-    // Validate
+    // Validate Payment Data
     // =================================================
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -290,29 +336,31 @@ const verifyPayment = async (req, res) => {
     }
 
     // =================================================
-    // Validate Method
+    // Validate Payment Method
     // =================================================
 
     if (checkout.paymentMethod !== "ONLINE") {
       return res.status(400).json({
         success: false,
+
         message: "This checkout is not an online payment",
       });
     }
 
     // =================================================
-    // Duplicate
+    // Prevent Duplicate Verification
     // =================================================
 
     if (checkout.completed || checkout.paymentStatus === "Paid") {
       return res.status(400).json({
         success: false,
+
         message: "Payment already verified",
       });
     }
 
     // =================================================
-    // Generate Signature
+    // Generate Razorpay Signature
     // =================================================
 
     const generatedSignature = crypto
@@ -334,60 +382,21 @@ const verifyPayment = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
+
         message: "Invalid payment signature",
       });
     }
 
     // =================================================
-    // Fetch Razorpay Order
-    // =================================================
-
-    const razorpayOrder = await razorpay.orders.fetch(razorpay_order_id);
-
-    if (!razorpayOrder) {
-      return res.status(400).json({
-        success: false,
-        message: "Razorpay order not found",
-      });
-    }
-
-    // =================================================
-    // Currency
-    // =================================================
-
-    if (razorpayOrder.currency !== "INR") {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid payment currency",
-      });
-    }
-
-    // =================================================
-    // Amount
-    // =================================================
-
-    const expectedAmount = Math.round(checkout.totalPrice * 100);
-
-    if (Number(razorpayOrder.amount) !== expectedAmount) {
-      return res.status(400).json({
-        success: false,
-        message: "Payment amount mismatch",
-      });
-    }
-
-    // =================================================
-    // Order ID
-    // =================================================
-
-    if (razorpayOrder.id !== razorpay_order_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Razorpay order",
-      });
-    }
-
-    // =================================================
     // Complete Checkout
+    // =================================================
+    //
+    // IMPORTANT:
+    // Use the actual request-body variable names.
+    //
+    // razorpay_payment_id -> razorpayPaymentId
+    // razorpay_signature  -> razorpaySignature
+    //
     // =================================================
 
     const orders = await completeCheckout({
@@ -397,15 +406,11 @@ const verifyPayment = async (req, res) => {
 
       razorpaySignature: razorpay_signature,
 
-      // ---------------------------------------------
-      // Socket.IO
-      // ---------------------------------------------
-
       io: req.app.get("io"),
     });
 
     // =================================================
-    // Success
+    // Response
     // =================================================
 
     return res.status(200).json({
@@ -420,6 +425,7 @@ const verifyPayment = async (req, res) => {
 
     return res.status(500).json({
       success: false,
+
       message: error.message,
     });
   }

@@ -12,18 +12,31 @@ import {
 } from "./services/adminService";
 
 // =====================================================
+// Common Error Helper
+// =====================================================
+
+const getErrorMessage = (error, fallback) => {
+  return (
+    error.response?.data?.message ||
+    error.response?.data?.error ||
+    error.message ||
+    fallback
+  );
+};
+
+// =====================================================
 // Admin Dashboard
 // =====================================================
 
 export const fetchAdminDashboard = createAsyncThunk(
   "admin/fetchAdminDashboard",
 
-  async (_, thunkAPI) => {
+  async (period = "30d", thunkAPI) => {
     try {
-      return await getAdminDashboard();
+      return await getAdminDashboard(period);
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Failed to load admin dashboard",
+        getErrorMessage(error, "Failed to load admin dashboard"),
       );
     }
   },
@@ -41,7 +54,7 @@ export const fetchAllUsers = createAsyncThunk(
       return await getAllUsers();
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Failed to fetch users",
+        getErrorMessage(error, "Failed to fetch users"),
       );
     }
   },
@@ -59,7 +72,7 @@ export const changeUserStatus = createAsyncThunk(
       return await updateUserStatus(id, isActive);
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Failed to update user status",
+        getErrorMessage(error, "Failed to update user status"),
       );
     }
   },
@@ -77,7 +90,7 @@ export const fetchAllAdminProducts = createAsyncThunk(
       return await getAllAdminProducts();
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Failed to fetch products",
+        getErrorMessage(error, "Failed to fetch products"),
       );
     }
   },
@@ -95,7 +108,7 @@ export const changeAdminProductStatus = createAsyncThunk(
       return await updateAdminProductStatus(id, isAvailable);
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Failed to update product status",
+        getErrorMessage(error, "Failed to update product status"),
       );
     }
   },
@@ -113,7 +126,7 @@ export const fetchAllAdminOrders = createAsyncThunk(
       return await getAllAdminOrders();
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Failed to fetch orders",
+        getErrorMessage(error, "Failed to fetch orders"),
       );
     }
   },
@@ -131,7 +144,7 @@ export const fetchAllAdminReviews = createAsyncThunk(
       return await getAllAdminReviews();
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Failed to fetch reviews",
+        getErrorMessage(error, "Failed to fetch reviews"),
       );
     }
   },
@@ -149,7 +162,7 @@ export const deleteAdminReview = createAsyncThunk(
       return await deleteAdminReviewRequest(id);
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Failed to delete review",
+        getErrorMessage(error, "Failed to delete review"),
       );
     }
   },

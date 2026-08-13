@@ -30,7 +30,11 @@ const initialState = {
 
   placing: false,
 
-  cancelling: false,
+  // -------------------------------------------------
+  // ID of the order currently being cancelled
+  // -------------------------------------------------
+
+  cancellingOrderId: null,
 
   // =================================================
   // Errors
@@ -93,7 +97,7 @@ const orderSlice = createSlice({
       .addCase(fetchMyOrders.fulfilled, (state, action) => {
         state.loading = false;
 
-        state.orders = action.payload.orders || [];
+        state.orders = action.payload?.orders || [];
 
         state.error = null;
       })
@@ -116,7 +120,7 @@ const orderSlice = createSlice({
       .addCase(fetchOrderById.fulfilled, (state, action) => {
         state.detailsLoading = false;
 
-        state.selectedOrder = action.payload.order || null;
+        state.selectedOrder = action.payload?.order || null;
 
         state.detailsError = null;
       })
@@ -139,7 +143,7 @@ const orderSlice = createSlice({
       .addCase(createOrder.fulfilled, (state, action) => {
         state.placing = false;
 
-        const newOrders = action.payload.orders || [];
+        const newOrders = action.payload?.orders || [];
 
         state.orders = [...newOrders, ...state.orders];
 
@@ -156,15 +160,16 @@ const orderSlice = createSlice({
       // Cancel Buyer Order
       // =================================================
 
-      .addCase(cancelBuyerOrder.pending, (state) => {
-        state.cancelling = true;
+      .addCase(cancelBuyerOrder.pending, (state, action) => {
+        state.cancellingOrderId = action.meta.arg;
+
         state.cancelError = null;
       })
 
       .addCase(cancelBuyerOrder.fulfilled, (state, action) => {
-        state.cancelling = false;
+        state.cancellingOrderId = null;
 
-        const cancelledOrder = action.payload.order;
+        const cancelledOrder = action.payload?.order;
 
         if (cancelledOrder) {
           // -------------------------------------------
@@ -177,6 +182,8 @@ const orderSlice = createSlice({
 
           if (index !== -1) {
             state.orders[index] = cancelledOrder;
+          } else {
+            state.orders.unshift(cancelledOrder);
           }
 
           // -------------------------------------------
@@ -192,7 +199,7 @@ const orderSlice = createSlice({
       })
 
       .addCase(cancelBuyerOrder.rejected, (state, action) => {
-        state.cancelling = false;
+        state.cancellingOrderId = null;
 
         state.cancelError = action.payload || "Failed to cancel order";
       });

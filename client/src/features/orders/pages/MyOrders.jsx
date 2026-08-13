@@ -1,14 +1,17 @@
 import { useEffect } from "react";
+import { FileText } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 import { fetchMyOrders, cancelBuyerOrder } from "../orderThunks";
 
 function MyOrders() {
   const dispatch = useDispatch();
 
-  const { orders, loading, error, cancelling, cancelError } = useSelector(
-    (state) => state.orders,
-  );
+  const navigate = useNavigate();
+
+  const { orders, loading, error, cancellingOrderId, cancelError } =
+    useSelector((state) => state.orders);
 
   // =====================================================
   // Fetch Orders
@@ -29,10 +32,6 @@ function MyOrders() {
       return;
     }
 
-    // -------------------------------------------------
-    // Check Cancellation Eligibility
-    // -------------------------------------------------
-
     const cancellableStatuses = ["Pending", "Accepted"];
 
     if (!cancellableStatuses.includes(order.orderStatus)) {
@@ -40,10 +39,6 @@ function MyOrders() {
 
       return;
     }
-
-    // -------------------------------------------------
-    // Confirmation Message
-    // -------------------------------------------------
 
     const isOnlinePaid =
       order.paymentMethod === "ONLINE" && order.paymentStatus === "Paid";
@@ -60,19 +55,11 @@ function MyOrders() {
       confirmationMessage = "Are you sure you want to cancel this order?";
     }
 
-    // -------------------------------------------------
-    // Confirm
-    // -------------------------------------------------
-
     const confirmed = window.confirm(confirmationMessage);
 
     if (!confirmed) {
       return;
     }
-
-    // -------------------------------------------------
-    // Cancel Order
-    // -------------------------------------------------
 
     try {
       const result = await dispatch(cancelBuyerOrder(order._id));
@@ -83,15 +70,23 @@ function MyOrders() {
 
         alert(message);
 
-        // -------------------------------------------------
-        // Refresh Orders
-        // -------------------------------------------------
-
         dispatch(fetchMyOrders());
       }
     } catch (error) {
       console.error("Cancel order error:", error);
     }
+  };
+
+  // =====================================================
+  // View Invoice
+  // =====================================================
+
+  const handleViewInvoice = (orderId) => {
+    if (!orderId) {
+      return;
+    }
+
+    navigate(`/orders/${orderId}/invoice`);
   };
 
   // =====================================================
@@ -119,10 +114,10 @@ function MyOrders() {
         return "bg-red-100 text-red-700";
 
       case "Cancelled":
-        return "bg-gray-200 text-gray-700";
+        return "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200";
 
       default:
-        return "bg-gray-100 text-gray-700";
+        return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200";
     }
   };
 
@@ -164,14 +159,59 @@ function MyOrders() {
   };
 
   // =====================================================
+  // Delivery Address
+  // =====================================================
+
+  const renderDeliveryAddress = (address) => {
+    if (!address) {
+      return (
+        <p className="mt-1 text-gray-500 dark:text-gray-400">
+          No delivery address available
+        </p>
+      );
+    }
+
+    if (typeof address === "object" && !Array.isArray(address)) {
+      return (
+        <div className="mt-2 space-y-1 text-gray-900 dark:text-gray-100">
+          {address.fullName && (
+            <p className="font-semibold">{address.fullName}</p>
+          )}
+
+          {address.phone && <p>{address.phone}</p>}
+
+          {address.addressLine1 && <p>{address.addressLine1}</p>}
+
+          {address.addressLine2 && <p>{address.addressLine2}</p>}
+
+          <p>
+            {[address.city, address.state].filter(Boolean).join(", ")}
+            {address.postalCode ? ` - ${address.postalCode}` : ""}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <p className="mt-1 text-gray-900 dark:text-gray-100">{String(address)}</p>
+    );
+  };
+
+  // =====================================================
   // Loading
   // =====================================================
 
   if (loading) {
     return (
-      <section className="mx-auto max-w-6xl px-4 py-10">
-        <div className="rounded-2xl border bg-white p-10 text-center shadow-sm">
-          <p className="text-gray-600">Loading orders...</p>
+      <section className="min-h-screen bg-gray-50 dark:bg-gray-950">
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="text-center">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-600" />
+
+            <p className="mt-4 text-gray-600 dark:text-gray-400">
+              Loading orders...
+            </p>
+          </div>
         </div>
       </section>
     );
@@ -183,9 +223,13 @@ function MyOrders() {
 
   if (error) {
     return (
-      <section className="mx-auto max-w-6xl px-4 py-10">
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
-          <p className="font-medium text-red-700">{error}</p>
+      <section className="min-h-screen bg-gray-50 dark:bg-gray-950">
+        <div className="mx-auto max-w-6xl px-4 py-10">
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+            <p className="font-semibold">Unable to load orders</p>
+
+            <p className="mt-1 text-sm">{error}</p>
+          </div>
         </div>
       </section>
     );
@@ -196,242 +240,316 @@ function MyOrders() {
   // =====================================================
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-10">
-      {/* =================================================
-          Header
-      ================================================= */}
+    <section className="min-h-screen bg-gray-50 px-4 py-10 dark:bg-gray-950 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        {/* =================================================
+            Header
+        ================================================= */}
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            My Orders
+          </h1>
 
-        <p className="mt-2 text-gray-600">
-          Track and manage your Hawkins Farm orders.
-        </p>
-      </div>
-
-      {/* =================================================
-          Cancellation Error
-      ================================================= */}
-
-      {cancelError && (
-        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
-          <p className="font-medium text-red-700">{cancelError}</p>
-        </div>
-      )}
-
-      {/* =================================================
-          Empty Orders
-      ================================================= */}
-
-      {!orders || orders.length === 0 ? (
-        <div className="rounded-2xl border bg-white p-10 text-center shadow-sm">
-          <h2 className="text-xl font-semibold text-gray-900">No Orders Yet</h2>
-
-          <p className="mt-2 text-gray-500">
-            Your orders will appear here after you place an order.
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Track your Hawkins Farm orders and manage your purchases.
           </p>
         </div>
-      ) : (
-        <div className="space-y-6">
-          {orders.map((order) => {
-            const isCancellable = ["Pending", "Accepted"].includes(
-              order.orderStatus,
-            );
 
-            const isOnlinePaid =
-              order.paymentMethod === "ONLINE" &&
-              order.paymentStatus === "Paid";
+        {/* =================================================
+            Cancellation Error
+        ================================================= */}
 
-            const isCancellingThisOrder =
-              cancelling &&
-              order._id === orders.find((item) => item._id === order._id)?._id;
+        {cancelError && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+            {cancelError}
+          </div>
+        )}
 
-            return (
-              <div
-                key={order._id}
-                className="rounded-2xl border bg-white p-6 shadow-sm"
-              >
-                {/* =================================================
-                    Order Header
-                ================================================= */}
+        {/* =================================================
+            Empty State
+        ================================================= */}
 
-                <div className="flex flex-col gap-4 border-b pb-5 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      {order.product?.name || "Unknown Product"}
-                    </h2>
+        {orders.length === 0 ? (
+          <div className="rounded-2xl border border-gray-200 bg-white p-12 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div className="text-4xl">📦</div>
 
-                    <p className="mt-1 text-sm text-gray-500">
-                      Order ID: {order._id}
-                    </p>
-                  </div>
+            <h2 className="mt-4 text-xl font-semibold text-gray-900 dark:text-white">
+              No orders yet
+            </h2>
 
-                  {/* Status */}
+            <p className="mt-2 text-gray-500 dark:text-gray-400">
+              Your orders will appear here after you make a purchase.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {orders.map((order) => {
+              const product = order.product;
 
-                  <span
-                    className={`inline-flex w-fit rounded-full px-3 py-1 text-sm font-semibold ${getStatusClasses(
-                      order.orderStatus,
-                    )}`}
-                  >
-                    {order.orderStatus || "Unknown"}
-                  </span>
-                </div>
+              const farmer = order.farmer;
 
-                {/* =================================================
-                    Order Information
-                ================================================= */}
+              const isDelivered = order.orderStatus === "Delivered";
 
-                <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                  {/* Quantity */}
+              const isCancellable = ["Pending", "Accepted"].includes(
+                order.orderStatus,
+              );
 
-                  <div>
-                    <p className="text-sm text-gray-500">Quantity</p>
+              const isOnlinePaid =
+                order.paymentMethod === "ONLINE" &&
+                order.paymentStatus === "Paid";
 
-                    <p className="mt-1 font-semibold text-gray-900">
-                      {order.quantity} {order.product?.unit || ""}
-                    </p>
-                  </div>
+              const isCancellingThisOrder = cancellingOrderId === order._id;
 
-                  {/* Total */}
+              return (
+                <div
+                  key={order._id}
+                  className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
+                >
+                  <div className="p-5 sm:p-6">
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                      {/* =================================================
+                          Product
+                      ================================================= */}
 
-                  <div>
-                    <p className="text-sm text-gray-500">Total</p>
+                      <div className="flex gap-4">
+                        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800">
+                          {product?.images?.[0]?.url ? (
+                            <img
+                              src={product.images[0].url}
+                              alt={product.name || "Product"}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-2xl">🌾</span>
+                          )}
+                        </div>
 
-                    <p className="mt-1 font-semibold text-gray-900">
-                      ₹{Number(order.totalPrice || 0).toLocaleString("en-IN")}
-                    </p>
-                  </div>
+                        <div>
+                          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                            {product?.name || "Product"}
+                          </h2>
 
-                  {/* Payment Method */}
+                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Farmer:{" "}
+                            <span className="font-medium text-gray-800 dark:text-gray-200">
+                              {farmer?.name || "Farmer"}
+                            </span>
+                          </p>
 
-                  <div>
-                    <p className="text-sm text-gray-500">Payment Method</p>
+                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Quantity: {order.quantity} {product?.unit || ""}
+                          </p>
+                        </div>
+                      </div>
 
-                    <p className="mt-1 font-semibold text-gray-900">
-                      {getPaymentMethodLabel(order.paymentMethod)}
-                    </p>
-                  </div>
+                      {/* =================================================
+                          Status
+                      ================================================= */}
 
-                  {/* Payment Status */}
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span
+                          className={`rounded-full px-3 py-1.5 text-xs font-semibold ${getStatusClasses(
+                            order.orderStatus,
+                          )}`}
+                        >
+                          {order.orderStatus}
+                        </span>
 
-                  <div>
-                    <p className="text-sm text-gray-500">Payment Status</p>
+                        <span
+                          className={`rounded-full px-3 py-1.5 text-xs font-semibold ${getPaymentStatusClasses(
+                            order.paymentStatus,
+                          )}`}
+                        >
+                          {order.paymentStatus}
+                        </span>
+                      </div>
+                    </div>
 
-                    <span
-                      className={`mt-1 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getPaymentStatusClasses(
-                        order.paymentStatus,
-                      )}`}
-                    >
-                      {order.paymentStatus || "Pending"}
-                    </span>
-                  </div>
-                </div>
+                    {/* =================================================
+                        Payment Information
+                    ================================================= */}
 
-                {/* =================================================
-                    Delivery Address
-                ================================================= */}
+                    <div className="mt-5 flex flex-col gap-4 border-t border-gray-100 pt-5 dark:border-gray-800 lg:flex-row lg:items-center lg:justify-between">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                          Payment
+                        </p>
 
-                {order.deliveryAddress && (
-                  <div className="mt-6 rounded-xl bg-gray-50 p-4">
-                    <p className="text-sm font-medium text-gray-500">
-                      Delivery Address
-                    </p>
+                        <p className="mt-1 font-medium text-gray-800 dark:text-gray-200">
+                          {getPaymentMethodLabel(order.paymentMethod)}
+                        </p>
+                      </div>
 
-                    <p className="mt-1 text-gray-900">
-                      {order.deliveryAddress}
-                    </p>
-                  </div>
-                )}
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                          Order Date
+                        </p>
 
-                {/* =================================================
-                    Cancellation Information
-                ================================================= */}
+                        <p className="mt-1 font-medium text-gray-800 dark:text-gray-200">
+                          {order.createdAt
+                            ? new Date(order.createdAt).toLocaleDateString(
+                                "en-IN",
+                              )
+                            : "—"}
+                        </p>
+                      </div>
 
-                {order.orderStatus === "Cancelled" && (
-                  <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <p className="font-medium text-gray-700">
-                      This order has been cancelled.
-                    </p>
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                          Total
+                        </p>
 
-                    {order.cancelledAt && (
-                      <p className="mt-1 text-sm text-gray-500">
-                        Cancelled on{" "}
-                        {new Date(order.cancelledAt).toLocaleString("en-IN")}
+                        <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+                          ₹
+                          {Number(order.totalPrice || 0).toLocaleString(
+                            "en-IN",
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* =================================================
+                        Delivery Address
+                    ================================================= */}
+
+                    <div className="mt-5 rounded-xl bg-gray-50 p-4 dark:bg-gray-800">
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                        Delivery Address
                       </p>
+
+                      {renderDeliveryAddress(order.deliveryAddress)}
+                    </div>
+
+                    {/* =================================================
+                        Cancelled
+                    ================================================= */}
+
+                    {order.orderStatus === "Cancelled" && (
+                      <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+                        <p className="font-medium text-gray-700 dark:text-gray-200">
+                          This order has been cancelled.
+                        </p>
+
+                        {order.cancelledAt && (
+                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Cancelled on{" "}
+                            {new Date(order.cancelledAt).toLocaleString(
+                              "en-IN",
+                            )}
+                          </p>
+                        )}
+                      </div>
                     )}
-                  </div>
-                )}
 
-                {/* =================================================
-                    Refund Information
-                ================================================= */}
+                    {/* =================================================
+                        Refund Information
+                    ================================================= */}
 
-                {order.paymentStatus === "Refunded" && (
-                  <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
-                    <p className="font-medium text-blue-700">
-                      Your online payment has been refunded.
-                    </p>
-
-                    <p className="mt-1 text-sm text-blue-600">
-                      The refund was initiated through Razorpay.
-                    </p>
-                  </div>
-                )}
-
-                {/* =================================================
-                    Cancel Button
-                ================================================= */}
-
-                {isCancellable && (
-                  <div className="mt-6 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">
-                        Want to cancel this order?
-                      </p>
-
-                      {isOnlinePaid ? (
-                        <p className="mt-1 text-xs text-gray-500">
-                          Your paid online order will be sent for a Razorpay
-                          refund.
+                    {order.paymentStatus === "Refunded" && (
+                      <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/40">
+                        <p className="font-medium text-blue-700 dark:text-blue-300">
+                          Your online payment has been refunded.
                         </p>
-                      ) : (
-                        <p className="mt-1 text-xs text-gray-500">
-                          No payment refund is required for COD.
+
+                        <p className="mt-1 text-sm text-blue-600 dark:text-blue-400">
+                          The refund was initiated through Razorpay.
                         </p>
+                      </div>
+                    )}
+
+                    {/* =================================================
+                        Actions
+                    ================================================= */}
+
+                    <div className="mt-6 flex flex-col gap-3 border-t border-gray-100 pt-5 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between">
+                      {/* Invoice */}
+
+                      <button
+                        type="button"
+                        onClick={() => handleViewInvoice(order._id)}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
+                      >
+                        <FileText size={18} />
+                        View Invoice
+                      </button>
+
+                      {/* Cancel */}
+
+                      {isCancellable && (
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                          <div className="sm:text-right">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                              Want to cancel this order?
+                            </p>
+
+                            {isOnlinePaid ? (
+                              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Your paid online order will be sent for a
+                                Razorpay refund.
+                              </p>
+                            ) : (
+                              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                No payment refund is required for COD.
+                              </p>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={Boolean(cancellingOrderId)}
+                            onClick={() => handleCancelOrder(order)}
+                            className="rounded-lg border border-red-300 bg-white px-5 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-800 dark:bg-gray-900 dark:text-red-400 dark:hover:bg-red-950/30"
+                          >
+                            {isCancellingThisOrder
+                              ? "Cancelling..."
+                              : "Cancel Order"}
+                          </button>
+                        </div>
                       )}
                     </div>
 
-                    <button
-                      type="button"
-                      disabled={cancelling || isCancellingThisOrder}
-                      onClick={() => handleCancelOrder(order)}
-                      className="rounded-lg border border-red-300 bg-white px-5 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isCancellingThisOrder ? "Cancelling..." : "Cancel Order"}
-                    </button>
+                    {/* =================================================
+                        No Cancellation Message
+                    ================================================= */}
+
+                    {!isCancellable &&
+                      !["Cancelled", "Rejected"].includes(
+                        order.orderStatus,
+                      ) && (
+                        <div className="mt-6 border-t border-gray-100 pt-5 dark:border-gray-800">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            This order can no longer be cancelled because it is
+                            already{" "}
+                            <span className="font-medium text-gray-700 dark:text-gray-200">
+                              {order.orderStatus}
+                            </span>
+                            .
+                          </p>
+                        </div>
+                      )}
+
+                    {/* =================================================
+                        Delivered Review
+                    ================================================= */}
+
+                    {isDelivered && product?._id && (
+                      <div className="mt-6 border-t border-gray-100 pt-5 dark:border-gray-800">
+                        <a
+                          href={`/products/${product._id}?orderId=${order._id}`}
+                          className="inline-flex rounded-xl bg-yellow-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-yellow-600"
+                        >
+                          Rate Product
+                        </a>
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {/* =================================================
-                    No Cancellation Message
-                ================================================= */}
-
-                {!isCancellable &&
-                  !["Cancelled", "Rejected"].includes(order.orderStatus) && (
-                    <div className="mt-6 border-t pt-5">
-                      <p className="text-sm text-gray-500">
-                        This order can no longer be cancelled because it is
-                        already{" "}
-                        <span className="font-medium">{order.orderStatus}</span>
-                        .
-                      </p>
-                    </div>
-                  )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

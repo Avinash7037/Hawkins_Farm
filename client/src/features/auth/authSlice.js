@@ -1,6 +1,14 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-import { login, register, fetchProfile } from "./authThunks";
+import {
+  login,
+  register,
+  forgotPassword,
+  resetPassword,
+  fetchProfile,
+  updateProfile,
+  changePassword,
+} from "./authThunks";
 
 import { connectSocket, disconnectSocket } from "../../socket";
 
@@ -24,6 +32,26 @@ const initialState = {
   loading: false,
 
   error: null,
+
+  // ===================================================
+  // Forgot Password
+  // ===================================================
+
+  forgotPasswordLoading: false,
+
+  forgotPasswordError: null,
+
+  resetUrl: null,
+
+  // ===================================================
+  // Reset Password
+  // ===================================================
+
+  resetPasswordLoading: false,
+
+  resetPasswordError: null,
+
+  resetPasswordSuccess: false,
 };
 
 // =====================================================
@@ -41,15 +69,7 @@ const authSlice = createSlice({
     // =================================================
 
     logout: (state) => {
-      // -------------------------------------------------
-      // Disconnect Socket
-      // -------------------------------------------------
-
       disconnectSocket();
-
-      // -------------------------------------------------
-      // Clear Redux State
-      // -------------------------------------------------
 
       state.user = null;
 
@@ -58,10 +78,6 @@ const authSlice = createSlice({
       state.loading = false;
 
       state.error = null;
-
-      // -------------------------------------------------
-      // Clear Local Storage
-      // -------------------------------------------------
 
       localStorage.removeItem("user");
 
@@ -75,11 +91,29 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+
+    // =================================================
+    // Clear Password Reset State
+    // =================================================
+
+    clearPasswordResetState: (state) => {
+      state.forgotPasswordLoading = false;
+
+      state.forgotPasswordError = null;
+
+      state.resetUrl = null;
+
+      state.resetPasswordLoading = false;
+
+      state.resetPasswordError = null;
+
+      state.resetPasswordSuccess = false;
+    },
   },
 
-  // =====================================================
+  // ===================================================
   // Async Actions
-  // =====================================================
+  // ===================================================
 
   extraReducers: (builder) => {
     builder
@@ -101,17 +135,9 @@ const authSlice = createSlice({
 
         state.token = action.payload.token;
 
-        // -------------------------------------------------
-        // Persist Authentication
-        // -------------------------------------------------
-
         localStorage.setItem("user", JSON.stringify(action.payload.user));
 
         localStorage.setItem("token", action.payload.token);
-
-        // -------------------------------------------------
-        // Connect Socket.IO
-        // -------------------------------------------------
 
         connectSocket(action.payload.token, action.payload.user?._id);
       })
@@ -135,26 +161,14 @@ const authSlice = createSlice({
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
 
-        // -------------------------------------------------
-        // Registration With Automatic Login
-        // -------------------------------------------------
-
         if (action.payload?.token) {
           state.user = action.payload.user;
 
           state.token = action.payload.token;
 
-          // -------------------------------------------------
-          // Persist Authentication
-          // -------------------------------------------------
-
           localStorage.setItem("user", JSON.stringify(action.payload.user));
 
           localStorage.setItem("token", action.payload.token);
-
-          // -------------------------------------------------
-          // Connect Socket.IO
-          // -------------------------------------------------
 
           connectSocket(action.payload.token, action.payload.user?._id);
         }
@@ -164,6 +178,61 @@ const authSlice = createSlice({
         state.loading = false;
 
         state.error = action.payload || "Registration failed";
+      })
+
+      // =================================================
+      // FORGOT PASSWORD
+      // =================================================
+
+      .addCase(forgotPassword.pending, (state) => {
+        state.forgotPasswordLoading = true;
+
+        state.forgotPasswordError = null;
+
+        state.resetUrl = null;
+      })
+
+      .addCase(forgotPassword.fulfilled, (state, action) => {
+        state.forgotPasswordLoading = false;
+
+        state.forgotPasswordError = null;
+
+        state.resetUrl = action.payload?.resetUrl || null;
+      })
+
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.forgotPasswordLoading = false;
+
+        state.forgotPasswordError =
+          action.payload || "Failed to generate reset link";
+      })
+
+      // =================================================
+      // RESET PASSWORD
+      // =================================================
+
+      .addCase(resetPassword.pending, (state) => {
+        state.resetPasswordLoading = true;
+
+        state.resetPasswordError = null;
+
+        state.resetPasswordSuccess = false;
+      })
+
+      .addCase(resetPassword.fulfilled, (state) => {
+        state.resetPasswordLoading = false;
+
+        state.resetPasswordError = null;
+
+        state.resetPasswordSuccess = true;
+      })
+
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.resetPasswordLoading = false;
+
+        state.resetPasswordSuccess = false;
+
+        state.resetPasswordError = action.payload || "Failed to reset password";
       })
 
       // =================================================
@@ -181,15 +250,7 @@ const authSlice = createSlice({
 
         state.user = action.payload.user;
 
-        // -------------------------------------------------
-        // Update Stored User
-        // -------------------------------------------------
-
         localStorage.setItem("user", JSON.stringify(action.payload.user));
-
-        // -------------------------------------------------
-        // Connect Socket.IO
-        // -------------------------------------------------
 
         if (state.token && action.payload.user?._id) {
           connectSocket(state.token, action.payload.user._id);
@@ -200,6 +261,54 @@ const authSlice = createSlice({
         state.loading = false;
 
         state.error = action.payload || "Failed to fetch profile";
+      })
+
+      // =================================================
+      // UPDATE PROFILE
+      // =================================================
+
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+
+        state.error = null;
+      })
+
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+
+        state.user = action.payload.user;
+
+        localStorage.setItem("user", JSON.stringify(action.payload.user));
+
+        state.error = null;
+      })
+
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+
+        state.error = action.payload || "Failed to update profile";
+      })
+
+      // =================================================
+      // CHANGE PASSWORD
+      // =================================================
+
+      .addCase(changePassword.pending, (state) => {
+        state.loading = true;
+
+        state.error = null;
+      })
+
+      .addCase(changePassword.fulfilled, (state) => {
+        state.loading = false;
+
+        state.error = null;
+      })
+
+      .addCase(changePassword.rejected, (state, action) => {
+        state.loading = false;
+
+        state.error = action.payload || "Failed to change password";
       });
   },
 });
@@ -208,7 +317,8 @@ const authSlice = createSlice({
 // Actions
 // =====================================================
 
-export const { logout, clearError } = authSlice.actions;
+export const { logout, clearError, clearPasswordResetState } =
+  authSlice.actions;
 
 // =====================================================
 // Reducer

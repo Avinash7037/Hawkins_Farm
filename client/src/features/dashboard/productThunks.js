@@ -4,6 +4,7 @@ import {
   getFarmerProducts,
   createProduct,
   updateProduct,
+  restockProduct,
   deleteProduct,
 } from "./productService";
 
@@ -59,6 +60,27 @@ export const editFarmerProduct = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data?.message || "Failed to update product",
+      );
+    }
+  },
+);
+
+// =====================================================
+// Restock Farmer Product
+// =====================================================
+
+export const restockFarmerProduct = createAsyncThunk(
+  "dashboard/restockFarmerProduct",
+
+  async ({ id, quantity }, thunkAPI) => {
+    try {
+      return await restockProduct({
+        id,
+        quantity,
+      });
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || "Failed to restock product",
       );
     }
   },

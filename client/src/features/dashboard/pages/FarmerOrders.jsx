@@ -22,15 +22,17 @@ function FarmerOrders() {
   // =====================================================
 
   return (
-    <section className="p-6">
+    <section className="bg-white p-6 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       {/* =================================================
           Header
       ================================================= */}
 
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Orders
+        </h1>
 
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-gray-600 dark:text-gray-400">
           Manage orders received from buyers.
         </p>
       </div>
@@ -40,7 +42,7 @@ function FarmerOrders() {
       ================================================= */}
 
       {error && (
-        <div className="mb-6 rounded-xl bg-red-50 p-5 text-red-600">
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-5 text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
           {error}
         </div>
       )}
@@ -51,26 +53,34 @@ function FarmerOrders() {
 
       {!loading && !error && (
         <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500">Total Orders</p>
+          {/* Total Orders */}
 
-            <p className="mt-2 text-3xl font-bold text-gray-900">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Total Orders
+            </p>
+
+            <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
               {orders.length}
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500">Pending</p>
+          {/* Pending */}
 
-            <p className="mt-2 text-3xl font-bold text-yellow-600">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Pending</p>
+
+            <p className="mt-2 text-3xl font-bold text-yellow-600 dark:text-yellow-400">
               {orders.filter((order) => order.orderStatus === "Pending").length}
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500">Active</p>
+          {/* Active */}
 
-            <p className="mt-2 text-3xl font-bold text-blue-600">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Active</p>
+
+            <p className="mt-2 text-3xl font-bold text-blue-600 dark:text-blue-400">
               {
                 orders.filter((order) =>
                   ["Accepted", "Packed", "Shipped"].includes(order.orderStatus),
@@ -79,10 +89,14 @@ function FarmerOrders() {
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500">Delivered</p>
+          {/* Delivered */}
 
-            <p className="mt-2 text-3xl font-bold text-green-600">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Delivered
+            </p>
+
+            <p className="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">
               {
                 orders.filter((order) => order.orderStatus === "Delivered")
                   .length
@@ -96,7 +110,7 @@ function FarmerOrders() {
           Orders Table
       ================================================= */}
 
-      <div className="rounded-2xl border bg-white shadow-sm">
+      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <OrderTable orders={orders} loading={loading} />
       </div>
     </section>

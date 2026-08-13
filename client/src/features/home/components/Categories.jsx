@@ -3,19 +3,46 @@ import { categories } from "../data/categories";
 
 function Categories() {
   return (
-    <section className="py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-14">
-          <h2 className="text-4xl font-bold text-gray-900">
+    <section
+      className="
+        bg-white py-24
+        dark:bg-gray-950
+      "
+    >
+      <div className="mx-auto max-w-7xl px-6">
+        {/* =================================================
+            Section Header
+        ================================================= */}
+
+        <div className="mb-14 text-center">
+          <h2
+            className="
+              text-4xl font-bold
+              text-gray-900
+
+              dark:text-white
+            "
+          >
             Browse by Category
           </h2>
 
-          <p className="mt-4 text-gray-600 max-w-xl mx-auto">
+          <p
+            className="
+              mx-auto mt-4 max-w-xl
+              text-gray-600
+
+              dark:text-gray-300
+            "
+          >
             Discover fresh farm products organized into popular categories.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        {/* =================================================
+            Categories
+        ================================================= */}
+
+        <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-6">
           {categories.map((category, index) => {
             const Icon = category.icon;
 
@@ -29,15 +56,59 @@ function Categories() {
                   delay: index * 0.1,
                 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-3xl shadow-lg hover:shadow-2xl p-6 cursor-pointer transition-all duration-300 text-center"
+                className="
+                  cursor-pointer
+                  rounded-3xl
+                  bg-white
+                  p-6
+                  text-center
+                  shadow-lg
+                  transition-all
+                  duration-300
+                  hover:shadow-2xl
+
+                  dark:bg-gray-900
+                  dark:shadow-gray-950/50
+                  dark:hover:shadow-black/50
+                "
               >
+                {/* =================================================
+                    Category Icon
+                ================================================= */}
+
                 <div
-                  className={`${category.color} w-16 h-16 rounded-full flex items-center justify-center mx-auto`}
+                  className={`
+                    mx-auto flex h-16 w-16
+                    items-center justify-center
+                    rounded-full
+                    ${category.color}
+                  `}
                 >
-                  <Icon size={30} className="text-emerald-700" />
+                  <Icon
+                    size={30}
+                    className="
+                      text-emerald-700
+                      dark:text-emerald-300
+                    "
+                  />
                 </div>
 
-                <h3 className="mt-5 font-semibold text-lg">{category.name}</h3>
+                {/* =================================================
+                    Category Name
+                ================================================= */}
+
+                <h3
+                  className="
+                    mt-5
+                    text-lg
+                    font-semibold
+                    text-gray-900
+
+                    dark:text-gray-100
+                  "
+                >
+                  {category.name}
+                </h3>
               </motion.div>
             );
           })}

@@ -11,13 +11,16 @@ import {
   deleteAdminReview,
 } from "./adminThunks";
 
+// =====================================================
+// Initial State
+// =====================================================
+
 const initialState = {
   // ===================================================
   // Dashboard
   // ===================================================
 
   dashboard: null,
-
   dashboardLoading: false,
 
   // ===================================================
@@ -25,9 +28,7 @@ const initialState = {
   // ===================================================
 
   users: [],
-
   usersLoading: false,
-
   updatingUser: false,
 
   // ===================================================
@@ -35,9 +36,7 @@ const initialState = {
   // ===================================================
 
   products: [],
-
   productsLoading: false,
-
   updatingProduct: false,
 
   // ===================================================
@@ -45,7 +44,6 @@ const initialState = {
   // ===================================================
 
   orders: [],
-
   ordersLoading: false,
 
   // ===================================================
@@ -53,9 +51,7 @@ const initialState = {
   // ===================================================
 
   reviews: [],
-
   reviewsLoading: false,
-
   deletingReview: false,
 
   // ===================================================
@@ -65,19 +61,20 @@ const initialState = {
   error: null,
 
   usersError: null,
-
   updateUserError: null,
 
   productsError: null,
-
   updateProductError: null,
 
   ordersError: null,
 
   reviewsError: null,
-
   deleteReviewError: null,
 };
+
+// =====================================================
+// Slice
+// =====================================================
 
 const adminSlice = createSlice({
   name: "admin",
@@ -86,24 +83,64 @@ const adminSlice = createSlice({
 
   reducers: {
     // =================================================
-    // Clear Errors
+    // Clear All Admin Errors
     // =================================================
 
     clearAdminError: (state) => {
       state.error = null;
 
       state.usersError = null;
-
       state.updateUserError = null;
 
       state.productsError = null;
-
       state.updateProductError = null;
 
       state.ordersError = null;
 
       state.reviewsError = null;
+      state.deleteReviewError = null;
+    },
 
+    // =================================================
+    // Clear Dashboard Error
+    // =================================================
+
+    clearDashboardError: (state) => {
+      state.error = null;
+    },
+
+    // =================================================
+    // Clear User Errors
+    // =================================================
+
+    clearUserErrors: (state) => {
+      state.usersError = null;
+      state.updateUserError = null;
+    },
+
+    // =================================================
+    // Clear Product Errors
+    // =================================================
+
+    clearProductErrors: (state) => {
+      state.productsError = null;
+      state.updateProductError = null;
+    },
+
+    // =================================================
+    // Clear Order Error
+    // =================================================
+
+    clearOrderError: (state) => {
+      state.ordersError = null;
+    },
+
+    // =================================================
+    // Clear Review Errors
+    // =================================================
+
+    clearReviewErrors: (state) => {
+      state.reviewsError = null;
       state.deleteReviewError = null;
     },
   },
@@ -117,7 +154,6 @@ const adminSlice = createSlice({
 
       .addCase(fetchAdminDashboard.pending, (state) => {
         state.dashboardLoading = true;
-
         state.error = null;
       })
 
@@ -141,7 +177,6 @@ const adminSlice = createSlice({
 
       .addCase(fetchAllUsers.pending, (state) => {
         state.usersLoading = true;
-
         state.usersError = null;
       })
 
@@ -165,7 +200,6 @@ const adminSlice = createSlice({
 
       .addCase(changeUserStatus.pending, (state) => {
         state.updatingUser = true;
-
         state.updateUserError = null;
       })
 
@@ -174,7 +208,7 @@ const adminSlice = createSlice({
 
         const updatedUser = action.payload?.user;
 
-        if (updatedUser) {
+        if (updatedUser?._id) {
           const index = state.users.findIndex(
             (user) => user._id === updatedUser._id,
           );
@@ -200,7 +234,6 @@ const adminSlice = createSlice({
 
       .addCase(fetchAllAdminProducts.pending, (state) => {
         state.productsLoading = true;
-
         state.productsError = null;
       })
 
@@ -224,7 +257,6 @@ const adminSlice = createSlice({
 
       .addCase(changeAdminProductStatus.pending, (state) => {
         state.updatingProduct = true;
-
         state.updateProductError = null;
       })
 
@@ -233,7 +265,7 @@ const adminSlice = createSlice({
 
         const updatedProduct = action.payload?.product;
 
-        if (updatedProduct) {
+        if (updatedProduct?._id) {
           const index = state.products.findIndex(
             (product) => product._id === updatedProduct._id,
           );
@@ -259,7 +291,6 @@ const adminSlice = createSlice({
 
       .addCase(fetchAllAdminOrders.pending, (state) => {
         state.ordersLoading = true;
-
         state.ordersError = null;
       })
 
@@ -283,7 +314,6 @@ const adminSlice = createSlice({
 
       .addCase(fetchAllAdminReviews.pending, (state) => {
         state.reviewsLoading = true;
-
         state.reviewsError = null;
       })
 
@@ -307,7 +337,6 @@ const adminSlice = createSlice({
 
       .addCase(deleteAdminReview.pending, (state) => {
         state.deletingReview = true;
-
         state.deleteReviewError = null;
       })
 
@@ -331,6 +360,21 @@ const adminSlice = createSlice({
   },
 });
 
-export const { clearAdminError } = adminSlice.actions;
+// =====================================================
+// Actions
+// =====================================================
+
+export const {
+  clearAdminError,
+  clearDashboardError,
+  clearUserErrors,
+  clearProductErrors,
+  clearOrderError,
+  clearReviewErrors,
+} = adminSlice.actions;
+
+// =====================================================
+// Reducer
+// =====================================================
 
 export default adminSlice.reducer;
