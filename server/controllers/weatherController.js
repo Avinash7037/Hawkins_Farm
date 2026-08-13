@@ -48,13 +48,26 @@ const searchLocation = async (req, res) => {
     url.searchParams.set("language", "en");
     url.searchParams.set("format", "json");
 
+    console.log("Weather location API URL:", url.toString());
+
     const response = await fetch(url);
 
+    console.log("Open-Meteo geocoding status:", response.status);
+
+    const responseText = await response.text();
+
+    console.log("Open-Meteo geocoding response:", responseText);
+
     if (!response.ok) {
-      throw new Error("Weather location service is unavailable.");
+      return res.status(502).json({
+        success: false,
+        message: "Open-Meteo location service returned an error.",
+        status: response.status,
+        details: responseText,
+      });
     }
 
-    const data = await response.json();
+    const data = JSON.parse(responseText);
 
     const locations = (data.results || []).map((location) => ({
       id: location.id,
@@ -132,9 +145,13 @@ const getWeather = async (req, res) => {
     const url = new URL("https://api.open-meteo.com/v1/forecast");
 
     url.searchParams.set("latitude", lat.toString());
+
     url.searchParams.set("longitude", lon.toString());
 
-    // Current weather
+    // =================================================
+    // Current Weather
+    // =================================================
+
     url.searchParams.set(
       "current",
       [
@@ -150,7 +167,10 @@ const getWeather = async (req, res) => {
       ].join(","),
     );
 
-    // Daily forecast
+    // =================================================
+    // Daily Forecast
+    // =================================================
+
     url.searchParams.set(
       "daily",
       [
@@ -165,6 +185,10 @@ const getWeather = async (req, res) => {
       ].join(","),
     );
 
+    // =================================================
+    // Units & Forecast Configuration
+    // =================================================
+
     url.searchParams.set("forecast_days", "7");
     url.searchParams.set("temperature_unit", "celsius");
     url.searchParams.set("wind_speed_unit", "kmh");
@@ -175,16 +199,39 @@ const getWeather = async (req, res) => {
     // Request Weather
     // =================================================
 
+    console.log("Weather API URL:", url.toString());
+
     const response = await fetch(url);
 
-    if (!response.ok) {
-      throw new Error("Weather service is unavailable.");
-    }
+    console.log("Open-Meteo status:", response.status);
 
-    const data = await response.json();
+    // Read response as text first so we can see
+    // the actual Open-Meteo error if something fails.
+    const responseText = await response.text();
+
+    console.log("Open-Meteo response:", responseText);
 
     // =================================================
-    // Response
+    // Handle Open-Meteo Error
+    // =================================================
+
+    if (!response.ok) {
+      return res.status(502).json({
+        success: false,
+        message: "Open-Meteo weather service returned an error.",
+        status: response.status,
+        details: responseText,
+      });
+    }
+
+    // =================================================
+    // Parse Response
+    // =================================================
+
+    const data = JSON.parse(responseText);
+
+    // =================================================
+    // Send Weather Response
     // =================================================
 
     return res.status(200).json({
