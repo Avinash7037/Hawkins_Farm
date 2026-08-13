@@ -519,8 +519,34 @@ const updateProduct = async (req, res) => {
 
       updateData.quantity = quantity;
 
+      // =================================================
       // Automatically synchronize availability
+      // =================================================
+
       updateData.isAvailable = quantity > 0;
+
+      // =================================================
+      // Reset Low Stock Alert After Restocking
+      // =================================================
+      //
+      // Example:
+      //
+      // 0 → 20
+      // Reset alert state.
+      //
+      // 20 → 5
+      // Reset alert state so the next purchase can
+      // generate a new low-stock notification.
+      //
+      // 4 → 3
+      // Keep existing alert state.
+      // =================================================
+
+      if (quantity === 0) {
+        updateData.lowStockNotified = false;
+      } else if (quantity > product.lowStockThreshold) {
+        updateData.lowStockNotified = false;
+      }
     }
 
     if (req.body.unit !== undefined) {
@@ -801,6 +827,95 @@ const updateProductStatusAdmin = async (req, res) => {
     });
   }
 };
+
+// =====================================================
+// Restock Farmer Product
+// =====================================================
+
+const restockProduct = async (req, res) => {
+  try {
+    const farmerId = req.user._id;
+    const { id } = req.params;
+    const { quantity } = req.body;
+
+    // =================================================
+    // Validate Product ID
+    // =================================================
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product ID",
+      });
+    }
+
+    // =================================================
+    // Validate Restock Quantity
+    // =================================================
+
+    const restockQuantity = Number(quantity);
+
+    if (!Number.isInteger(restockQuantity) || restockQuantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Restock quantity must be a positive whole number",
+      });
+    }
+
+    // =================================================
+    // Find Farmer Product
+    // =================================================
+
+    const product = await Product.findOne({
+      _id: id,
+      farmer: farmerId,
+    });
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    // =================================================
+    // Increase Stock
+    // =================================================
+
+    product.quantity += restockQuantity;
+
+    // =================================================
+    // Restore Availability
+    // =================================================
+
+    product.isAvailable = true;
+
+    // =================================================
+    // Allow Future Low-Stock Notifications
+    // =================================================
+
+    product.lowStockNotified = false;
+
+    await product.save();
+
+    // =================================================
+    // Response
+    // =================================================
+
+    res.status(200).json({
+      success: true,
+      message: `${product.name} restocked successfully`,
+      product,
+    });
+  } catch (error) {
+    console.error("Restock product error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to restock product",
+    });
+  }
+};
 // =====================================================
 // Export
 // =====================================================
@@ -814,4 +929,5 @@ module.exports = {
   deleteProduct,
   getAllProductsAdmin,
   updateProductStatusAdmin,
+  restockProduct
 };

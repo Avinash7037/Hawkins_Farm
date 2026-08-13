@@ -1,15 +1,17 @@
 function Loader() {
   return (
-    <div className="flex justify-center items-center py-10">
+    <div className="flex items-center justify-center py-10">
       <div
         className="
-          w-10
           h-10
+          w-10
+          animate-spin
+          rounded-full
           border-4
           border-green-600
           border-t-transparent
-          rounded-full
-          animate-spin
+          dark:border-green-500
+          dark:border-t-transparent
         "
       />
     </div>

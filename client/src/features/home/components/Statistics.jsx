@@ -3,17 +3,42 @@ import { stats } from "../data/stats";
 
 function Statistics() {
   return (
-    <section className="py-24 bg-emerald-600 text-white">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold">Trusted Across India</h2>
+    <section
+      className="
+        bg-emerald-600
+        py-24
+        text-white
 
-          <p className="mt-4 text-emerald-100">
+        dark:bg-emerald-950
+      "
+    >
+      <div className="mx-auto max-w-7xl px-6">
+        {/* =================================================
+            Section Header
+        ================================================= */}
+
+        <div className="mb-16 text-center">
+          <h2 className="text-4xl font-bold text-white">
+            Trusted Across India
+          </h2>
+
+          <p
+            className="
+              mt-4
+              text-emerald-100
+
+              dark:text-emerald-200
+            "
+          >
             Thousands of farmers and consumers rely on Hawkins Farm every day.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+        {/* =================================================
+            Statistics
+        ================================================= */}
+
+        <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
           {stats.map((item, index) => {
             const Icon = item.icon;
 
@@ -30,12 +55,23 @@ function Statistics() {
                 className="text-center"
               >
                 <div className="flex justify-center">
-                  <Icon size={40} />
+                  <Icon size={40} className="text-white" />
                 </div>
 
-                <h3 className="mt-6 text-5xl font-bold">{item.value}</h3>
+                <h3 className="mt-6 text-5xl font-bold text-white">
+                  {item.value}
+                </h3>
 
-                <p className="mt-3 text-emerald-100">{item.label}</p>
+                <p
+                  className="
+                    mt-3
+                    text-emerald-100
+
+                    dark:text-emerald-200
+                  "
+                >
+                  {item.label}
+                </p>
               </motion.div>
             );
           })}

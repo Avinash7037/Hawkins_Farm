@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
-
-import { useForm, useWatch } from "react-hook-form";
+import { useWatch, useForm } from "react-hook-form";
 
 import { useDispatch, useSelector } from "react-redux";
-
 import { useNavigate } from "react-router-dom";
 
 import DeliveryForm from "../components/DeliveryForm";
@@ -13,9 +11,15 @@ import Button from "../../../components/common/Button";
 
 import { fetchCart } from "../../cart/cartThunks";
 
+import { fetchAddresses } from "../../address/addressThunks";
+
 import { createCheckout, verifyCheckout } from "../paymentThunks";
 
 import { resetPayment } from "../paymentSlice";
+
+// =====================================================
+// Checkout
+// =====================================================
 
 function Checkout() {
   const dispatch = useDispatch();
@@ -23,12 +27,26 @@ function Checkout() {
   const navigate = useNavigate();
 
   // =====================================================
+  // Selected Address
+  // =====================================================
+
+  const [selectedAddress, setSelectedAddress] = useState(null);
+
+  // =====================================================
   // Redux
   // =====================================================
 
-  const { loading, error } = useSelector((state) => state.payment);
+  const { loading: paymentLoading, error: paymentError } = useSelector(
+    (state) => state.payment,
+  );
 
   const { cart, totalPrice } = useSelector((state) => state.cart);
+
+  const {
+    addresses,
+    loading: addressLoading,
+    error: addressError,
+  } = useSelector((state) => state.addresses);
 
   const { user } = useSelector((state) => state.auth);
 
@@ -36,15 +54,9 @@ function Checkout() {
   // Form
   // =====================================================
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    formState: { errors },
-  } = useForm({
+  const { register, handleSubmit, control } = useForm({
     defaultValues: {
       paymentMethod: "ONLINE",
-      deliveryAddress: "",
     },
   });
 
@@ -59,11 +71,13 @@ function Checkout() {
   });
 
   // =====================================================
-  // Fetch Cart
+  // Fetch Cart + Addresses
   // =====================================================
 
   useEffect(() => {
     dispatch(fetchCart());
+
+    dispatch(fetchAddresses());
 
     return () => {
       dispatch(resetPayment());
@@ -71,16 +85,29 @@ function Checkout() {
   }, [dispatch]);
 
   // =====================================================
+  // Select Default Address
+  // =====================================================
+
+  useEffect(() => {
+    if (!selectedAddress && addresses.length > 0) {
+      const defaultAddress =
+        addresses.find((address) => address.isDefault) || addresses[0];
+
+      setSelectedAddress(defaultAddress);
+    }
+  }, [addresses, selectedAddress]);
+
+  // =====================================================
   // Redirect Empty Cart
   // =====================================================
 
   useEffect(() => {
-    if (!cart.length && !loading) {
+    if (!cart.length && !paymentLoading) {
       navigate("/cart", {
         replace: true,
       });
     }
-  }, [cart, loading, navigate]);
+  }, [cart, paymentLoading, navigate]);
 
   // =====================================================
   // Load Razorpay
@@ -90,6 +117,7 @@ function Checkout() {
     return new Promise((resolve) => {
       if (window.Razorpay) {
         resolve(true);
+
         return;
       }
 
@@ -110,6 +138,14 @@ function Checkout() {
   };
 
   // =====================================================
+  // Add New Address
+  // =====================================================
+
+  const handleAddAddress = () => {
+    navigate("/profile");
+  };
+
+  // =====================================================
   // Submit
   // =====================================================
 
@@ -127,6 +163,16 @@ function Checkout() {
     }
 
     // -------------------------------------------------
+    // Address Validation
+    // -------------------------------------------------
+
+    if (!selectedAddress) {
+      alert("Please select a delivery address.");
+
+      return;
+    }
+
+    // -------------------------------------------------
     // Payment Method Validation
     // -------------------------------------------------
 
@@ -137,13 +183,40 @@ function Checkout() {
     }
 
     // =================================================
+    // Delivery Address Snapshot
+    // =================================================
+    //
+    // We intentionally create a new object instead of
+    // sending the Redux object directly.
+    //
+    // This becomes the immutable address snapshot stored
+    // with the order.
+    //
+
+    const deliveryAddress = {
+      fullName: selectedAddress.fullName,
+
+      phone: selectedAddress.phone,
+
+      addressLine1: selectedAddress.addressLine1,
+
+      addressLine2: selectedAddress.addressLine2 || "",
+
+      city: selectedAddress.city,
+
+      state: selectedAddress.state,
+
+      postalCode: selectedAddress.postalCode,
+    };
+
+    // =================================================
     // COD
     // =================================================
 
     if (data.paymentMethod === "COD") {
       const result = await dispatch(
         createCheckout({
-          deliveryAddress: data.deliveryAddress,
+          deliveryAddress,
 
           paymentMethod: "COD",
         }),
@@ -180,7 +253,7 @@ function Checkout() {
 
     const checkoutResult = await dispatch(
       createCheckout({
-        deliveryAddress: data.deliveryAddress,
+        deliveryAddress,
 
         paymentMethod: "ONLINE",
       }),
@@ -289,7 +362,7 @@ function Checkout() {
   // Loading
   // =====================================================
 
-  if (!cart.length && loading) {
+  if (!cart.length && paymentLoading) {
     return (
       <section className="p-6">
         <div className="flex min-h-[60vh] items-center justify-center">
@@ -313,17 +386,35 @@ function Checkout() {
         <h1 className="text-4xl font-bold text-gray-900">Checkout</h1>
 
         <p className="mt-2 text-gray-500">
-          Enter your delivery details and choose your payment method.
+          Select your delivery address and choose your payment method.
         </p>
       </div>
 
       {/* =================================================
-          Error
+          Payment Error
       ================================================= */}
 
-      {error && (
+      {paymentError && (
         <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
-          <p className="font-medium text-red-700">{error}</p>
+          <p className="font-medium text-red-700">{paymentError}</p>
+        </div>
+      )}
+
+      {/* =================================================
+          Address Error
+      ================================================= */}
+
+      {addressError && (
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
+          <p className="font-medium text-red-700">{addressError}</p>
+
+          <button
+            type="button"
+            onClick={handleAddAddress}
+            className="mt-2 text-sm font-semibold text-red-700 underline"
+          >
+            Manage your addresses
+          </button>
         </div>
       )}
 
@@ -340,7 +431,22 @@ function Checkout() {
         ================================================= */}
 
         <div className="space-y-8 lg:col-span-2">
-          <DeliveryForm register={register} errors={errors} />
+          {/* =================================================
+              Delivery Address
+          ================================================= */}
+
+          <DeliveryForm
+            addresses={addresses}
+            selectedAddress={selectedAddress}
+            onSelectAddress={setSelectedAddress}
+            onAddAddress={handleAddAddress}
+            loading={addressLoading}
+            error={addressError}
+          />
+
+          {/* =================================================
+              Payment Method
+          ================================================= */}
 
           <PaymentMethod register={register} selectedMethod={selectedMethod} />
         </div>
@@ -354,15 +460,25 @@ function Checkout() {
 
           <Button
             type="submit"
-            loading={loading}
-            disabled={loading || !cart.length}
+            loading={paymentLoading}
+            disabled={paymentLoading || !cart.length || !selectedAddress}
           >
-            {loading
+            {paymentLoading
               ? "Processing..."
               : selectedMethod === "COD"
                 ? "Place COD Order"
                 : "Pay Now"}
           </Button>
+
+          {/* =================================================
+              Address Reminder
+          ================================================= */}
+
+          {!selectedAddress && (
+            <p className="text-center text-sm text-gray-500">
+              Select a delivery address to continue.
+            </p>
+          )}
         </div>
       </form>
     </section>

@@ -6,15 +6,25 @@ import Statistics from "../components/Statistics";
 import Testimonials from "../components/Testimonials";
 import CTA from "../components/CTA";
 
+import CropPredictionCard from "../../cropRecognition/components/CropPredictionCard";
+
 function Home() {
   return (
     <>
       <Hero />
+
+      <CropPredictionCard />
+
       <Categories />
+
       <Features />
+
       <FeaturedProducts />
+
       <Statistics />
+
       <Testimonials />
+
       <CTA />
     </>
   );

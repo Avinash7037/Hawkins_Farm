@@ -64,22 +64,19 @@ function Chat() {
       const receiverId =
         typeof chat.receiver === "object" ? chat.receiver?._id : chat.receiver;
 
-      // Ignore messages that are not related
-      // to the logged-in user.
+      // Ignore unrelated messages.
+
       if (senderId !== user?._id && receiverId !== user?._id) {
         return;
       }
 
-      // Add message to current chat.
       dispatch(addMessage(chat));
 
       // =================================================
-      // Incoming message from the currently open user
+      // Incoming message from currently open user
       // =================================================
 
       if (senderId === userId && receiverId === user?._id) {
-        // The user is currently viewing this chat,
-        // so mark the message as read.
         dispatch(markChatAsRead(userId));
 
         return;
@@ -147,7 +144,6 @@ function Chat() {
       return;
     }
 
-    // Try to reconnect if socket disconnected.
     if (!socket.connected) {
       if (token && user?._id) {
         connectSocket(token, user._id);
@@ -231,12 +227,12 @@ function Chat() {
   // =====================================================
 
   return (
-    <section className="flex h-[calc(100vh-80px)] flex-col bg-white">
+    <section className="flex h-[calc(100vh-80px)] flex-col bg-white transition-colors duration-300 dark:bg-gray-950">
       {/* =================================================
           Header
       ================================================= */}
 
-      <div className="border-b bg-emerald-600 px-6 py-4 text-white">
+      <div className="border-b border-emerald-700 bg-emerald-600 px-6 py-4 text-white dark:bg-emerald-700 dark:border-emerald-800">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">Chat</h1>
@@ -258,14 +254,16 @@ function Chat() {
           Messages
       ================================================= */}
 
-      <div className="flex-1 overflow-y-auto bg-gray-50 p-6">
+      <div className="flex-1 overflow-y-auto bg-gray-50 p-6 transition-colors duration-300 dark:bg-gray-900">
         {loading ? (
           <div className="flex h-full items-center justify-center">
-            <p className="text-gray-500">Loading messages...</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              Loading messages...
+            </p>
           </div>
         ) : chats.length === 0 ? (
           <div className="flex h-full items-center justify-center">
-            <p className="text-center text-gray-500">
+            <p className="text-center text-gray-500 dark:text-gray-400">
               No messages yet.
               <br />
               Start the conversation.
@@ -290,7 +288,7 @@ function Chat() {
                     className={`max-w-[75%] rounded-2xl px-4 py-3 ${
                       isMine
                         ? "rounded-br-sm bg-emerald-600 text-white"
-                        : "rounded-bl-sm bg-white text-gray-800 shadow-sm"
+                        : "rounded-bl-sm bg-white text-gray-800 shadow-sm dark:bg-gray-800 dark:text-gray-100"
                     }`}
                   >
                     <p className="whitespace-pre-wrap break-words">
@@ -299,7 +297,9 @@ function Chat() {
 
                     <div
                       className={`mt-1 text-xs ${
-                        isMine ? "text-emerald-100" : "text-gray-400"
+                        isMine
+                          ? "text-emerald-100"
+                          : "text-gray-400 dark:text-gray-500"
                       }`}
                     >
                       {chat.createdAt
@@ -324,7 +324,7 @@ function Chat() {
       ================================================= */}
 
       {typingUser === userId && (
-        <div className="border-t bg-white px-6 py-2 text-sm text-gray-500">
+        <div className="border-t border-gray-200 bg-white px-6 py-2 text-sm text-gray-500 transition-colors duration-300 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400">
           User is typing...
         </div>
       )}
@@ -333,7 +333,7 @@ function Chat() {
           Message Input
       ================================================= */}
 
-      <div className="border-t bg-white p-4">
+      <div className="border-t border-gray-200 bg-white p-4 transition-colors duration-300 dark:border-gray-800 dark:bg-gray-950">
         <div className="flex gap-3">
           <textarea
             value={message}
@@ -342,7 +342,7 @@ function Chat() {
             placeholder="Type your message..."
             rows={1}
             maxLength={1000}
-            className="flex-1 resize-none rounded-xl border px-4 py-3 outline-none transition focus:border-emerald-500"
+            className="flex-1 resize-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500"
           />
 
           <button
@@ -355,7 +355,7 @@ function Chat() {
           </button>
         </div>
 
-        <p className="mt-2 text-right text-xs text-gray-400">
+        <p className="mt-2 text-right text-xs text-gray-400 dark:text-gray-500">
           Press Enter to send
         </p>
       </div>

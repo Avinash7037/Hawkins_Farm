@@ -7,6 +7,11 @@ const User = require("../models/userModel");
 
 const sendEmail = require("../utils/sendEmail");
 
+const {
+  createLowStockNotification,
+  createStockEmptyNotification,
+} = require("./notificationService");
+
 // =====================================================
 // Create Orders From Cart / Checkout
 // =====================================================
@@ -21,9 +26,12 @@ const createOrdersFromCart = async ({
   razorpayOrderId = "",
   razorpayPaymentId = "",
 
+  io = null,
+
   session: existingSession = null,
 }) => {
   let session = existingSession;
+
   let ownsSession = false;
 
   try {
@@ -40,12 +48,58 @@ const createOrdersFromCart = async ({
     }
 
     // =================================================
-    // Validate Address
+    // Validate Delivery Address
     // =================================================
 
-    if (!deliveryAddress?.trim()) {
+    if (!deliveryAddress || typeof deliveryAddress !== "object") {
       throw new Error("Delivery address is required");
     }
+
+    const requiredAddressFields = [
+      "fullName",
+      "phone",
+      "addressLine1",
+      "city",
+      "state",
+      "postalCode",
+    ];
+
+    for (const field of requiredAddressFields) {
+      if (
+        !deliveryAddress[field] ||
+        typeof deliveryAddress[field] !== "string" ||
+        !deliveryAddress[field].trim()
+      ) {
+        throw new Error(`Delivery address ${field} is required`);
+      }
+    }
+
+    // =================================================
+    // Create Delivery Address Snapshot
+    // =================================================
+    //
+    // We store a copy of the address on the order.
+    //
+    // This is important because the buyer may later edit
+    // or delete their saved address. Existing orders should
+    // continue to contain the address used at checkout.
+    // =================================================
+
+    const deliveryAddressSnapshot = {
+      fullName: deliveryAddress.fullName.trim(),
+
+      phone: deliveryAddress.phone.trim(),
+
+      addressLine1: deliveryAddress.addressLine1.trim(),
+
+      addressLine2: deliveryAddress.addressLine2?.trim() || "",
+
+      city: deliveryAddress.city.trim(),
+
+      state: deliveryAddress.state.trim(),
+
+      postalCode: deliveryAddress.postalCode.trim(),
+    };
 
     // =================================================
     // Validate Payment Method
@@ -110,6 +164,14 @@ const createOrdersFromCart = async ({
     const orders = [];
 
     // =================================================
+    // Track Stock Events
+    // =================================================
+
+    const stockEmptyItems = [];
+
+    const lowStockItems = [];
+
+    // =================================================
     // Process Every Item
     // =================================================
 
@@ -156,7 +218,7 @@ const createOrdersFromCart = async ({
           },
         },
         {
-          new: true,
+          returnDocument: "after",
           session,
         },
       );
@@ -180,10 +242,19 @@ const createOrdersFromCart = async ({
       }
 
       // =================================================
+      // Determine Stock State
+      // =================================================
+
+      const stockBecameEmpty = product.quantity === 0;
+
+      const stockIsLow =
+        product.quantity > 0 && product.quantity <= product.lowStockThreshold;
+
+      // =================================================
       // Update Availability
       // =================================================
 
-      if (product.quantity === 0) {
+      if (stockBecameEmpty) {
         product.isAvailable = false;
 
         await product.save({
@@ -225,7 +296,12 @@ const createOrdersFromCart = async ({
 
             totalPrice,
 
-            deliveryAddress: deliveryAddress.trim(),
+            // -------------------------------------------------
+            // IMPORTANT:
+            // Store the complete delivery address snapshot.
+            // -------------------------------------------------
+
+            deliveryAddress: deliveryAddressSnapshot,
 
             paymentMethod,
 
@@ -244,7 +320,47 @@ const createOrdersFromCart = async ({
         },
       );
 
-      orders.push(createdOrders[0]);
+      const createdOrder = createdOrders[0];
+
+      orders.push(createdOrder);
+
+      // =================================================
+      // Remember Empty Stock Event
+      // =================================================
+
+      if (stockBecameEmpty) {
+        stockEmptyItems.push({
+          farmerId: product.farmer,
+
+          productId: product._id,
+
+          productName: product.name,
+
+          orderId: createdOrder._id,
+        });
+      }
+
+      // =================================================
+      // Remember Low Stock Event
+      // =================================================
+
+      if (stockIsLow) {
+        lowStockItems.push({
+          farmerId: product.farmer,
+
+          productId: product._id,
+
+          productName: product.name,
+
+          quantity: product.quantity,
+
+          unit: product.unit,
+
+          threshold: product.lowStockThreshold,
+
+          orderId: createdOrder._id,
+        });
+      }
     }
 
     // =================================================
@@ -253,6 +369,71 @@ const createOrdersFromCart = async ({
 
     if (ownsSession) {
       await session.commitTransaction();
+    }
+
+    // =================================================
+    // Notifications
+    //
+    // Only send these after a standalone transaction
+    // successfully commits.
+    // =================================================
+
+    if (ownsSession) {
+      // -------------------------------------------------
+      // Low Stock
+      // -------------------------------------------------
+
+      for (const item of lowStockItems) {
+        try {
+          await createLowStockNotification({
+            farmerId: item.farmerId,
+
+            productId: item.productId,
+
+            productName: item.productName,
+
+            quantity: item.quantity,
+
+            unit: item.unit,
+
+            threshold: item.threshold,
+
+            orderId: item.orderId,
+
+            io,
+          });
+        } catch (notificationError) {
+          console.error(
+            "Low stock notification failed:",
+            notificationError.message,
+          );
+        }
+      }
+
+      // -------------------------------------------------
+      // Empty Stock
+      // -------------------------------------------------
+
+      for (const item of stockEmptyItems) {
+        try {
+          await createStockEmptyNotification({
+            farmerId: item.farmerId,
+
+            productId: item.productId,
+
+            productName: item.productName,
+
+            orderId: item.orderId,
+
+            io,
+          });
+        } catch (notificationError) {
+          console.error(
+            "Stock empty notification failed:",
+            notificationError.message,
+          );
+        }
+      }
     }
 
     return orders;
@@ -284,7 +465,14 @@ const clearBuyerCart = async (buyerId, session = null, cartItemIds = null) => {
     };
   }
 
-  await Cart.deleteMany(filter, session ? { session } : undefined);
+  await Cart.deleteMany(
+    filter,
+    session
+      ? {
+          session,
+        }
+      : undefined,
+  );
 };
 
 // =====================================================
@@ -339,8 +527,14 @@ const sendOrderConfirmationEmail = async (buyerId, totalOrders) => {
   });
 };
 
+// =====================================================
+// Exports
+// =====================================================
+
 module.exports = {
   createOrdersFromCart,
+
   clearBuyerCart,
+
   sendOrderConfirmationEmail,
 };

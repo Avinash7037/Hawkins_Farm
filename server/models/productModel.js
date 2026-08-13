@@ -2,11 +2,19 @@ const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema(
   {
+    // =====================================================
+    // Farmer
+    // =====================================================
+
     farmer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
+
+    // =====================================================
+    // Product Information
+    // =====================================================
 
     name: {
       type: String,
@@ -26,11 +34,19 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // =====================================================
+    // Pricing
+    // =====================================================
+
     price: {
       type: Number,
       required: true,
       min: 0,
     },
+
+    // =====================================================
+    // Stock
+    // =====================================================
 
     quantity: {
       type: Number,
@@ -44,17 +60,52 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // =====================================================
+    // Low Stock Settings
+    // =====================================================
+
+    lowStockThreshold: {
+      type: Number,
+      required: true,
+      min: 1,
+      default: 5,
+    },
+
+    // -----------------------------------------------------
+    // Prevent repeated low-stock notifications
+    //
+    // false = alert can be generated
+    // true  = low-stock alert already generated
+    // -----------------------------------------------------
+
+    lowStockNotified: {
+      type: Boolean,
+      default: false,
+    },
+
+    // =====================================================
+    // Location
+    // =====================================================
+
     location: {
       type: String,
       required: true,
       trim: true,
     },
 
+    // =====================================================
+    // Freshness
+    // =====================================================
+
     freshness: {
       type: String,
       enum: ["Fresh", "1 Day", "2 Days", "3+ Days"],
       default: "Fresh",
     },
+
+    // =====================================================
+    // Images
+    // =====================================================
 
     images: [
       {
@@ -70,10 +121,18 @@ const productSchema = new mongoose.Schema(
       },
     ],
 
+    // =====================================================
+    // Availability
+    // =====================================================
+
     isAvailable: {
       type: Boolean,
       default: true,
     },
+
+    // =====================================================
+    // Rating
+    // =====================================================
 
     rating: {
       type: Number,

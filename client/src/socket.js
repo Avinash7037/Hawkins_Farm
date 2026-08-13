@@ -21,6 +21,7 @@ const socket = io(SOCKET_URL, {
 
 export const connectSocket = (token, userId) => {
   if (!token || !userId) {
+    console.warn("Socket connection skipped: token or userId missing");
     return;
   }
 

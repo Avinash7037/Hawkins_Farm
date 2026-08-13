@@ -46,9 +46,11 @@ function EditProductModal({ product, isOpen, onClose, onSave }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-xl rounded-xl bg-white p-6">
-        <h2 className="mb-6 text-2xl font-bold">Edit Product</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
+        <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white">
+          Edit Product
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -56,7 +58,7 @@ function EditProductModal({ product, isOpen, onClose, onSave }) {
             value={formData.name}
             onChange={handleChange}
             placeholder="Product Name"
-            className="w-full rounded border p-3"
+            className="w-full rounded border border-gray-300 bg-white p-3 text-gray-900 outline-none focus:border-green-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
           />
 
           <input
@@ -64,7 +66,7 @@ function EditProductModal({ product, isOpen, onClose, onSave }) {
             value={formData.category}
             onChange={handleChange}
             placeholder="Category"
-            className="w-full rounded border p-3"
+            className="w-full rounded border border-gray-300 bg-white p-3 text-gray-900 outline-none focus:border-green-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
           />
 
           <input
@@ -73,7 +75,7 @@ function EditProductModal({ product, isOpen, onClose, onSave }) {
             value={formData.price}
             onChange={handleChange}
             placeholder="Price"
-            className="w-full rounded border p-3"
+            className="w-full rounded border border-gray-300 bg-white p-3 text-gray-900 outline-none focus:border-green-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
           />
 
           <input
@@ -82,7 +84,7 @@ function EditProductModal({ product, isOpen, onClose, onSave }) {
             value={formData.quantity}
             onChange={handleChange}
             placeholder="Quantity"
-            className="w-full rounded border p-3"
+            className="w-full rounded border border-gray-300 bg-white p-3 text-gray-900 outline-none focus:border-green-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
           />
 
           <input
@@ -90,7 +92,7 @@ function EditProductModal({ product, isOpen, onClose, onSave }) {
             value={formData.unit}
             onChange={handleChange}
             placeholder="Unit"
-            className="w-full rounded border p-3"
+            className="w-full rounded border border-gray-300 bg-white p-3 text-gray-900 outline-none focus:border-green-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
           />
 
           <input
@@ -98,7 +100,7 @@ function EditProductModal({ product, isOpen, onClose, onSave }) {
             value={formData.location}
             onChange={handleChange}
             placeholder="Location"
-            className="w-full rounded border p-3"
+            className="w-full rounded border border-gray-300 bg-white p-3 text-gray-900 outline-none focus:border-green-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
           />
 
           <textarea
@@ -107,10 +109,10 @@ function EditProductModal({ product, isOpen, onClose, onSave }) {
             value={formData.description}
             onChange={handleChange}
             placeholder="Description"
-            className="w-full rounded border p-3"
+            className="w-full rounded border border-gray-300 bg-white p-3 text-gray-900 outline-none focus:border-green-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
           />
 
-          <label className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
             <input
               type="checkbox"
               name="isAvailable"
@@ -124,14 +126,14 @@ function EditProductModal({ product, isOpen, onClose, onSave }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded bg-gray-300 px-4 py-2"
+              className="rounded bg-gray-300 px-4 py-2 text-gray-800 transition hover:bg-gray-400 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              className="rounded bg-green-600 px-4 py-2 text-white"
+              className="rounded bg-green-600 px-4 py-2 text-white transition hover:bg-green-700"
             >
               Save Changes
             </button>

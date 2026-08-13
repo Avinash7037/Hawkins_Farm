@@ -19,6 +19,8 @@ function Button({
         text-white
         transition
         hover:bg-emerald-700
+        dark:bg-emerald-600
+        dark:hover:bg-emerald-500
         disabled:cursor-not-allowed
         disabled:opacity-70
         ${className}

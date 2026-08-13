@@ -35,6 +35,12 @@ const securityMiddleware = require("./middleware/securityMiddleware");
 const initializeSocket = require("./socket/socket");
 
 // =====================================================
+// Auction Scheduler
+// =====================================================
+
+const { startAuctionScheduler } = require("./services/auctionScheduler");
+
+// =====================================================
 // Routes
 // =====================================================
 
@@ -49,6 +55,19 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const qrRoutes = require("./routes/qrRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const addressRoutes = require("./routes/addressRoutes");
+
+// =====================================================
+// Auction Routes
+// =====================================================
+
+const auctionRoutes = require("./routes/auctionRoutes");
+
+// =====================================================
+// AI Routes
+// =====================================================
+
+const aiRoutes = require("./routes/aiRoutes");
 
 // =====================================================
 // Error Middleware
@@ -125,6 +144,45 @@ app.use("/api/qr", qrRoutes);
 app.use("/api/notifications", notificationRoutes);
 
 // =====================================================
+// Address Routes
+// =====================================================
+
+app.use("/api/addresses", addressRoutes);
+
+// =====================================================
+// Auction Routes
+// =====================================================
+//
+// Public:
+// GET  /api/auctions/live
+// GET  /api/auctions/:id
+//
+// Farmer:
+// POST /api/auctions
+// GET  /api/auctions/farmer/my-auctions
+// PUT  /api/auctions/:id/cancel
+//
+// Buyer:
+// POST /api/auctions/:id/bid
+//
+// =====================================================
+
+app.use("/api/auctions", auctionRoutes);
+
+// =====================================================
+// Hawkins AI Routes
+// =====================================================
+//
+// POST /api/ai/ask
+//
+// Protected:
+// Logged-in Hawkins Farm users can ask questions.
+//
+// =====================================================
+
+app.use("/api/ai", aiRoutes);
+
+// =====================================================
 // Create HTTP Server
 // =====================================================
 
@@ -152,8 +210,7 @@ const io = new Server(server, {
 //
 // const io = req.app.get("io");
 //
-// This is required for real-time notifications.
-//
+// =====================================================
 
 app.set("io", io);
 
@@ -177,6 +234,7 @@ app.use(notFound);
 // Global Error Handler
 // =====================================================
 //
+// IMPORTANT:
 // This must be the LAST middleware.
 //
 
@@ -190,4 +248,10 @@ const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+
+  // ===================================================
+  // Start Auction Scheduler
+  // ===================================================
+
+  startAuctionScheduler(io);
 });

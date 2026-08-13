@@ -1,4 +1,83 @@
 @import "tailwindcss";
+
+/* =====================================================
+   Tailwind CSS v4 - Dark Mode
+===================================================== */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* =====================================================
+   Global Styles
+===================================================== */
+
+html {
+  min-width: 320px;
+  background-color: #ffffff;
+  color-scheme: light;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+html.dark {
+  background-color: #030712;
+  color-scheme: dark;
+}
+
 body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+
   font-family: "Poppins", sans-serif;
+
+  background-color: #ffffff;
+  color: #111827;
+
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+html.dark body {
+  background-color: #030712;
+  color: #f3f4f6;
+}
+
+/* =====================================================
+   Smooth Theme Transition
+===================================================== */
+
+body,
+button,
+input,
+textarea,
+select,
+main,
+header,
+footer,
+section,
+article,
+div {
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease;
+}
+
+/* =====================================================
+   Remove Default Button Appearance
+===================================================== */
+
+button {
+  font-family: inherit;
+}
+
+/* =====================================================
+   Prevent Horizontal Overflow
+===================================================== */
+
+html,
+body {
+  overflow-x: hidden;
 }

@@ -1,6 +1,9 @@
 import json
 from pathlib import Path
+
 import tensorflow as tf
+
+
 BASE_DIR = Path(__file__).resolve().parent
 
 MODEL_DIR = BASE_DIR / "models" / "crop_model.keras"
@@ -11,11 +14,13 @@ OUTPUT_PATH = BASE_DIR / "models" / "crop_model_49.keras"
 
 
 print("Loading model configuration...")
+
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     config = json.load(f)
 
 
 print("Reconstructing model...")
+
 model = tf.keras.models.model_from_json(
     json.dumps(config)
 )

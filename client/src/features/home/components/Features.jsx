@@ -3,20 +3,47 @@ import { features } from "../data/features";
 
 function Features() {
   return (
-    <section className="py-24 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900">
+    <section
+      className="
+        bg-gray-50 py-24
+        dark:bg-gray-950
+      "
+    >
+      <div className="mx-auto max-w-7xl px-6">
+        {/* =================================================
+            Section Header
+        ================================================= */}
+
+        <div className="mb-16 text-center">
+          <h2
+            className="
+              text-4xl font-bold
+              text-gray-900
+
+              dark:text-white
+            "
+          >
             Why Choose Hawkins Farm?
           </h2>
 
-          <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
+          <p
+            className="
+              mx-auto mt-4 max-w-2xl
+              text-gray-600
+
+              dark:text-gray-300
+            "
+          >
             We connect farmers and consumers through a trusted, transparent, and
             technology-driven marketplace.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* =================================================
+            Feature Cards
+        ================================================= */}
+
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, index) => {
             const Icon = feature.icon;
 
@@ -30,15 +57,73 @@ function Features() {
                   duration: 0.5,
                   delay: index * 0.1,
                 }}
-                className="bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300"
+                className="
+                  rounded-3xl
+                  bg-white
+                  p-8
+                  shadow-lg
+                  transition-all
+                  duration-300
+                  hover:shadow-2xl
+
+                  dark:bg-gray-900
+                  dark:shadow-gray-950/50
+                  dark:hover:shadow-black/50
+                "
               >
-                <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center">
-                  <Icon className="text-emerald-600" size={30} />
+                {/* =================================================
+                    Feature Icon
+                ================================================= */}
+
+                <div
+                  className="
+                    flex h-16 w-16
+                    items-center justify-center
+                    rounded-2xl
+                    bg-emerald-100
+
+                    dark:bg-emerald-950
+                  "
+                >
+                  <Icon
+                    className="
+                      text-emerald-600
+                      dark:text-emerald-400
+                    "
+                    size={30}
+                  />
                 </div>
 
-                <h3 className="text-xl font-semibold mt-6">{feature.title}</h3>
+                {/* =================================================
+                    Feature Title
+                ================================================= */}
 
-                <p className="mt-4 text-gray-600 leading-7">
+                <h3
+                  className="
+                    mt-6
+                    text-xl
+                    font-semibold
+                    text-gray-900
+
+                    dark:text-gray-100
+                  "
+                >
+                  {feature.title}
+                </h3>
+
+                {/* =================================================
+                    Feature Description
+                ================================================= */}
+
+                <p
+                  className="
+                    mt-4
+                    leading-7
+                    text-gray-600
+
+                    dark:text-gray-300
+                  "
+                >
                   {feature.description}
                 </p>
               </motion.div>

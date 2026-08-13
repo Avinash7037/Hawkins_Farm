@@ -48,21 +48,81 @@ const checkoutItemSchema = new mongoose.Schema(
 );
 
 // =====================================================
+// Delivery Address Schema
+// =====================================================
+
+const deliveryAddressSchema = new mongoose.Schema(
+  {
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    addressLine1: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    addressLine2: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    state: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    postalCode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
+// =====================================================
 // Checkout Schema
 // =====================================================
 
 const checkoutSchema = new mongoose.Schema(
   {
+    // =================================================
+    // Buyer
+    // =================================================
+
     buyer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
 
+    // =================================================
+    // Delivery Address
+    // =================================================
+
     deliveryAddress: {
-      type: String,
+      type: deliveryAddressSchema,
       required: true,
-      trim: true,
     },
 
     // =================================================
@@ -71,7 +131,9 @@ const checkoutSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
+
       enum: ["ONLINE", "COD"],
+
       default: "ONLINE",
     },
 
@@ -97,7 +159,9 @@ const checkoutSchema = new mongoose.Schema(
 
     totalPrice: {
       type: Number,
+
       required: true,
+
       min: 0,
     },
 
@@ -107,17 +171,21 @@ const checkoutSchema = new mongoose.Schema(
 
     razorpayOrderId: {
       type: String,
+
       default: "",
+
       index: true,
     },
 
     razorpayPaymentId: {
       type: String,
+
       default: "",
     },
 
     paymentSignature: {
       type: String,
+
       default: "",
     },
 
@@ -139,6 +207,7 @@ const checkoutSchema = new mongoose.Schema(
 
     completed: {
       type: Boolean,
+
       default: false,
     },
   },

@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const Checkout = require("../models/checkoutModel");
+const Product = require("../models/productModel");
 
 const {
   createOrdersFromCart,
@@ -8,7 +9,11 @@ const {
   sendOrderConfirmationEmail,
 } = require("./orderService");
 
-const { createNotification } = require("./notificationService");
+const {
+  createNotification,
+  createLowStockNotification,
+  createStockEmptyNotification,
+} = require("./notificationService");
 
 // =====================================================
 // Notify Farmers About Newly Created Orders
@@ -44,12 +49,227 @@ const notifyFarmersAboutOrders = async (orders, io) => {
         io,
       });
     } catch (notificationError) {
-      // -------------------------------------------------
-      // Notification failure must NOT break the order.
-      // -------------------------------------------------
-
       console.error(
         "Farmer order notification failed:",
+        notificationError.message,
+      );
+    }
+  }
+};
+
+// =====================================================
+// Notify Farmers About Low Stock
+// =====================================================
+//
+// This uses an atomic claim:
+//
+// lowStockNotified: false
+//        ↓
+// lowStockNotified: true
+//
+// Only the first checkout that reaches the low-stock
+// condition can claim the notification.
+//
+// This prevents repeated alerts for every purchase.
+// =====================================================
+
+const notifyFarmersAboutLowStock = async (orders, io) => {
+  if (!Array.isArray(orders) || orders.length === 0) {
+    return;
+  }
+
+  const processedProducts = new Set();
+
+  for (const order of orders) {
+    try {
+      if (!order?.product) {
+        continue;
+      }
+
+      const productId = order.product.toString();
+
+      if (processedProducts.has(productId)) {
+        continue;
+      }
+
+      processedProducts.add(productId);
+
+      // =================================================
+      // Atomically Claim Low Stock Alert
+      // =================================================
+
+      const product = await Product.findOneAndUpdate(
+        {
+          _id: productId,
+
+          quantity: {
+            $gt: 0,
+          },
+
+          lowStockNotified: false,
+
+          $expr: {
+            $lte: ["$quantity", "$lowStockThreshold"],
+          },
+        },
+        {
+          $set: {
+            lowStockNotified: true,
+          },
+        },
+        {
+          returnDocument: "after",
+        },
+      );
+
+      // -------------------------------------------------
+      // Another request already claimed it
+      // -------------------------------------------------
+
+      if (!product) {
+        continue;
+      }
+
+      // =================================================
+      // Create Notification
+      // =================================================
+
+      try {
+        await createLowStockNotification({
+          farmerId: product.farmer,
+
+          productId: product._id,
+
+          productName: product.name,
+
+          quantity: product.quantity,
+
+          unit: product.unit,
+
+          threshold: product.lowStockThreshold,
+
+          orderId: order._id,
+
+          io,
+        });
+
+        console.log(
+          `🔔 Low stock notification created: ${product.name} - ${product.quantity} ${product.unit}`,
+        );
+      } catch (notificationError) {
+        // -------------------------------------------------
+        // Allow another checkout to retry the alert
+        // -------------------------------------------------
+
+        await Product.updateOne(
+          {
+            _id: product._id,
+
+            lowStockNotified: true,
+          },
+          {
+            $set: {
+              lowStockNotified: false,
+            },
+          },
+        );
+
+        throw notificationError;
+      }
+    } catch (notificationError) {
+      console.error(
+        "Low stock notification failed:",
+        notificationError.message,
+      );
+    }
+  }
+};
+
+// =====================================================
+// Notify Farmers About Empty Stock
+// =====================================================
+
+const notifyFarmersAboutEmptyStock = async (orders, io) => {
+  if (!Array.isArray(orders) || orders.length === 0) {
+    return;
+  }
+
+  const processedProducts = new Set();
+
+  for (const order of orders) {
+    try {
+      if (!order?.product) {
+        continue;
+      }
+
+      const productId = order.product.toString();
+
+      if (processedProducts.has(productId)) {
+        continue;
+      }
+
+      processedProducts.add(productId);
+
+      // =================================================
+      // Get Current Product
+      // =================================================
+
+      const product = await Product.findById(productId).select(
+        "name quantity farmer unit",
+      );
+
+      if (!product) {
+        console.error(
+          "Stock notification skipped: product not found",
+          productId,
+        );
+
+        continue;
+      }
+
+      // =================================================
+      // Only Notify When Stock Is Zero
+      // =================================================
+
+      if (product.quantity !== 0) {
+        continue;
+      }
+
+      // =================================================
+      // Determine Farmer
+      // =================================================
+
+      const farmerId = product.farmer || order.farmer;
+
+      if (!farmerId) {
+        console.error(
+          "Stock notification skipped: farmer not found",
+          product.name,
+        );
+
+        continue;
+      }
+
+      // =================================================
+      // Create Empty Stock Notification
+      // =================================================
+
+      await createStockEmptyNotification({
+        farmerId,
+
+        productId: product._id,
+
+        productName: product.name,
+
+        orderId: order._id,
+
+        io,
+      });
+
+      console.log(`🔴 Stock empty notification created: ${product.name}`);
+    } catch (notificationError) {
+      console.error(
+        "Stock empty notification failed:",
         notificationError.message,
       );
     }
@@ -88,7 +308,7 @@ const completeCheckout = async ({
     }
 
     // =================================================
-    // Validate Buyer Checkout
+    // Validate Buyer
     // =================================================
 
     if (!checkout.buyer) {
@@ -166,7 +386,7 @@ const completeCheckout = async ({
 
       razorpayOrderId: checkout.razorpayOrderId,
 
-      razorpayPaymentId: razorpayPaymentId,
+      razorpayPaymentId,
 
       session,
     });
@@ -189,9 +409,6 @@ const completeCheckout = async ({
 
     checkout.paymentSignature = razorpaySignature;
 
-    // If your Checkout model has this field,
-    // mark the checkout completed.
-
     if (Object.prototype.hasOwnProperty.call(checkout, "completed")) {
       checkout.completed = true;
     }
@@ -207,15 +424,14 @@ const completeCheckout = async ({
     await session.commitTransaction();
 
     // =================================================
-    // Notify Farmers
-    //
-    // IMPORTANT:
-    // Notification happens AFTER the transaction
-    // commits. Therefore a notification failure
-    // cannot roll back the successful order.
+    // Notifications
     // =================================================
 
     await notifyFarmersAboutOrders(orders, io);
+
+    await notifyFarmersAboutLowStock(orders, io);
+
+    await notifyFarmersAboutEmptyStock(orders, io);
 
     // =================================================
     // Confirmation Email
@@ -227,26 +443,14 @@ const completeCheckout = async ({
       console.error("Order confirmation email failed:", emailError.message);
     }
 
-    // =================================================
-    // Return Orders
-    // =================================================
-
     return orders;
   } catch (error) {
-    // =================================================
-    // Rollback Transaction
-    // =================================================
-
     if (session.inTransaction()) {
       await session.abortTransaction();
     }
 
     throw error;
   } finally {
-    // =================================================
-    // Close Session
-    // =================================================
-
     await session.endSession();
   }
 };
@@ -313,9 +517,6 @@ const completeCODCheckout = async ({ checkoutId, io = null }) => {
 
     // =================================================
     // Create COD Orders
-    //
-    // Payment remains Pending because the buyer
-    // pays when the order is delivered.
     // =================================================
 
     orders = await createOrdersFromCart({
@@ -346,8 +547,6 @@ const completeCODCheckout = async ({ checkoutId, io = null }) => {
 
     // =================================================
     // Mark Checkout Completed
-    //
-    // COD payment is still Pending.
     // =================================================
 
     if (Object.prototype.hasOwnProperty.call(checkout, "completed")) {
@@ -370,6 +569,18 @@ const completeCODCheckout = async ({ checkoutId, io = null }) => {
 
     await notifyFarmersAboutOrders(orders, io);
 
+    // -------------------------------------------------
+    // LOW STOCK
+    // -------------------------------------------------
+
+    await notifyFarmersAboutLowStock(orders, io);
+
+    // -------------------------------------------------
+    // EMPTY STOCK
+    // -------------------------------------------------
+
+    await notifyFarmersAboutEmptyStock(orders, io);
+
     // =================================================
     // Confirmation Email
     // =================================================
@@ -380,26 +591,14 @@ const completeCODCheckout = async ({ checkoutId, io = null }) => {
       console.error("COD confirmation email failed:", emailError.message);
     }
 
-    // =================================================
-    // Return Orders
-    // =================================================
-
     return orders;
   } catch (error) {
-    // =================================================
-    // Rollback Transaction
-    // =================================================
-
     if (session.inTransaction()) {
       await session.abortTransaction();
     }
 
     throw error;
   } finally {
-    // =================================================
-    // Close Session
-    // =================================================
-
     await session.endSession();
   }
 };
@@ -410,5 +609,6 @@ const completeCODCheckout = async ({ checkoutId, io = null }) => {
 
 module.exports = {
   completeCheckout,
+
   completeCODCheckout,
 };

@@ -37,7 +37,7 @@ const menus = [
 
 function Sidebar() {
   return (
-    <aside className="h-screen w-64 bg-green-700 text-white">
+    <aside className="h-screen w-64 bg-green-700 text-white dark:bg-green-900">
       <div className="p-6">
         <h2 className="text-2xl font-bold">Hawkins Farm</h2>
       </div>
@@ -48,12 +48,15 @@ function Sidebar() {
             key={item.name}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-4 py-3 ${
-                isActive ? "bg-green-900" : "hover:bg-green-600"
+              `flex items-center gap-3 rounded-lg px-4 py-3 transition ${
+                isActive
+                  ? "bg-green-900 dark:bg-green-950"
+                  : "hover:bg-green-600 dark:hover:bg-green-800"
               }`
             }
           >
             <item.icon size={20} />
+
             {item.name}
           </NavLink>
         ))}

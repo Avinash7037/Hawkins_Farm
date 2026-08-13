@@ -4,8 +4,8 @@ import api from "../../../services/api";
 // Admin Dashboard
 // =====================================================
 
-export const getAdminDashboard = async () => {
-  const response = await api.get("/dashboard/admin");
+export const getAdminDashboard = async (period = "30d") => {
+  const response = await api.get(`/dashboard/admin?period=${period}`);
 
   return response.data;
 };

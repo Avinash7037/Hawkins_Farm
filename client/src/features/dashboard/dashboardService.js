@@ -1,6 +1,11 @@
 import api from "../../services/api";
 
-export const getFarmerDashboard = async () => {
-  const response = await api.get("/dashboard/farmer");
+// =====================================================
+// Get Farmer Dashboard
+// =====================================================
+
+export const getFarmerDashboard = async (period = "30d") => {
+  const response = await api.get(`/dashboard/farmer?period=${period}`);
+
   return response.data;
 };

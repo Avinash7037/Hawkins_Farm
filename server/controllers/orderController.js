@@ -26,6 +26,72 @@ const farmerTransitions = {
 };
 
 // =====================================================
+// Add Order Status History
+// =====================================================
+
+const addStatusHistory = (order, status, changedAt = new Date()) => {
+  if (!status) {
+    return;
+  }
+
+  // -------------------------------------------------
+  // Older orders may not have statusHistory
+  // -------------------------------------------------
+
+  if (!Array.isArray(order.statusHistory)) {
+    order.statusHistory = [];
+  }
+
+  // -------------------------------------------------
+  // Prevent duplicate consecutive statuses
+  // -------------------------------------------------
+
+  const lastEntry = order.statusHistory[order.statusHistory.length - 1];
+
+  if (lastEntry?.status === status) {
+    return;
+  }
+
+  // -------------------------------------------------
+  // Add new status
+  // -------------------------------------------------
+
+  order.statusHistory.push({
+    status,
+    changedAt,
+  });
+};
+
+// =====================================================
+// Ensure Existing Order Has Initial Status History
+// =====================================================
+//
+// This is useful for orders created before statusHistory
+// was added to the Order model.
+//
+// If an old order has no history and is currently:
+// Accepted / Packed / Shipped / Delivered / etc.
+//
+// we add its current status as a baseline before adding
+// the next status.
+// =====================================================
+
+const ensureInitialStatusHistory = (order) => {
+  if (Array.isArray(order.statusHistory) && order.statusHistory.length > 0) {
+    return;
+  }
+
+  const initialStatus = order.orderStatus || "Pending";
+
+  order.statusHistory = [
+    {
+      status: initialStatus,
+      changedAt: order.createdAt || new Date(),
+    },
+  ];
+};
+
+// =====================================================
 // Send Order Status Email
 // =====================================================
 
@@ -155,6 +221,13 @@ const placeOrder = async (req, res) => {
       paymentMethod: "COD",
 
       paymentStatus: "Pending",
+
+      // -------------------------------------------------
+      // Pass Socket.IO to order service so stock-empty
+      // notifications can be delivered in real time.
+      // -------------------------------------------------
+
+      io: req.app.get("io"),
     });
 
     // =================================================
@@ -217,7 +290,9 @@ const getBuyerOrders = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+
       totalOrders: orders.length,
+
       orders,
     });
   } catch (error) {
@@ -247,7 +322,9 @@ const getFarmerOrders = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+
       totalOrders: orders.length,
+
       orders,
     });
   } catch (error) {
@@ -311,11 +388,21 @@ const getOrderById = async (req, res) => {
     }
 
     // -------------------------------------------------
+    // Ensure old orders have usable history
+    //
+    // This does not save the order. It simply allows
+    // the frontend to receive a useful baseline history.
+    // -------------------------------------------------
+
+    ensureInitialStatusHistory(order);
+
+    // -------------------------------------------------
     // Response
     // -------------------------------------------------
 
     return res.status(200).json({
       success: true,
+
       order,
     });
   } catch (error) {
@@ -422,10 +509,22 @@ const updateOrderStatus = async (req, res) => {
     const productName = await getProductName(order.product);
 
     // -------------------------------------------------
+    // Ensure History Exists
+    // -------------------------------------------------
+
+    ensureInitialStatusHistory(order);
+
+    // -------------------------------------------------
     // Update Status
     // -------------------------------------------------
 
     order.orderStatus = orderStatus;
+
+    // -------------------------------------------------
+    // Record Status History
+    // -------------------------------------------------
+
+    addStatusHistory(order, orderStatus);
 
     // =================================================
     // COD Becomes Paid On Delivery
@@ -441,6 +540,7 @@ const updateOrderStatus = async (req, res) => {
 
     if (orderStatus === "Rejected") {
       order.cancelledBy = "Farmer";
+
       order.cancelledAt = new Date();
     }
 
@@ -692,6 +792,12 @@ const cancelOrder = async (req, res) => {
       });
     }
 
+    // -------------------------------------------------
+    // Ensure History Exists
+    // -------------------------------------------------
+
+    ensureInitialStatusHistory(order);
+
     // =================================================
     // ONLINE + PAID
     // =================================================
@@ -731,6 +837,12 @@ const cancelOrder = async (req, res) => {
       order.cancelledBy = "Buyer";
 
       order.cancelledAt = new Date();
+
+      // -------------------------------------------------
+      // Record Cancellation
+      // -------------------------------------------------
+
+      addStatusHistory(order, "Cancelled");
 
       // -------------------------------------------------
       // Mark Refunded
@@ -829,6 +941,12 @@ const cancelOrder = async (req, res) => {
       order.cancelledBy = "Buyer";
 
       order.cancelledAt = new Date();
+
+      // -------------------------------------------------
+      // Record Cancellation
+      // -------------------------------------------------
+
+      addStatusHistory(order, "Cancelled");
 
       await order.save();
 

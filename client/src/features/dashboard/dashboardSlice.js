@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 import { fetchFarmerDashboard } from "./dashboardThunks";
+import { restockFarmerProduct } from "./productThunks";
 
 import {
   fetchFarmerProducts,
@@ -123,6 +124,26 @@ const dashboardSlice = createSlice({
 
         if (index !== -1) {
           state.orders[index] = action.payload.order;
+        }
+      })
+
+      // =================================================
+      // Restock Product
+      // =================================================
+
+      .addCase(restockFarmerProduct.fulfilled, (state, action) => {
+        const updatedProduct = action.payload?.product;
+
+        if (!updatedProduct) {
+          return;
+        }
+
+        const index = state.products.findIndex(
+          (product) => product._id === updatedProduct._id,
+        );
+
+        if (index !== -1) {
+          state.products[index] = updatedProduct;
         }
       });
   },

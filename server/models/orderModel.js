@@ -1,5 +1,44 @@
 const mongoose = require("mongoose");
 
+// =====================================================
+// Order Status History Schema
+// =====================================================
+
+const orderStatusHistorySchema = new mongoose.Schema(
+  {
+    status: {
+      type: String,
+
+      enum: [
+        "Pending",
+        "Accepted",
+        "Rejected",
+        "Packed",
+        "Shipped",
+        "Delivered",
+        "Cancelled",
+      ],
+
+      required: true,
+    },
+
+    changedAt: {
+      type: Date,
+
+      default: Date.now,
+
+      required: true,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
+// =====================================================
+// Order Schema
+// =====================================================
+
 const orderSchema = new mongoose.Schema(
   {
     // =================================================
@@ -8,8 +47,12 @@ const orderSchema = new mongoose.Schema(
 
     buyer: {
       type: mongoose.Schema.Types.ObjectId,
+
       ref: "User",
+
       required: true,
+
+      index: true,
     },
 
     // =================================================
@@ -18,8 +61,12 @@ const orderSchema = new mongoose.Schema(
 
     farmer: {
       type: mongoose.Schema.Types.ObjectId,
+
       ref: "User",
+
       required: true,
+
+      index: true,
     },
 
     // =================================================
@@ -28,7 +75,9 @@ const orderSchema = new mongoose.Schema(
 
     product: {
       type: mongoose.Schema.Types.ObjectId,
+
       ref: "Product",
+
       required: true,
     },
 
@@ -38,7 +87,9 @@ const orderSchema = new mongoose.Schema(
 
     quantity: {
       type: Number,
+
       required: true,
+
       min: 1,
     },
 
@@ -48,18 +99,72 @@ const orderSchema = new mongoose.Schema(
 
     totalPrice: {
       type: Number,
+
       required: true,
+
       min: 0,
     },
 
     // =================================================
-    // Delivery Address
+    // Delivery Address Snapshot
     // =================================================
 
     deliveryAddress: {
-      type: String,
-      required: true,
-      trim: true,
+      fullName: {
+        type: String,
+
+        required: true,
+
+        trim: true,
+      },
+
+      phone: {
+        type: String,
+
+        required: true,
+
+        trim: true,
+      },
+
+      addressLine1: {
+        type: String,
+
+        required: true,
+
+        trim: true,
+      },
+
+      addressLine2: {
+        type: String,
+
+        default: "",
+
+        trim: true,
+      },
+
+      city: {
+        type: String,
+
+        required: true,
+
+        trim: true,
+      },
+
+      state: {
+        type: String,
+
+        required: true,
+
+        trim: true,
+      },
+
+      postalCode: {
+        type: String,
+
+        required: true,
+
+        trim: true,
+      },
     },
 
     // =================================================
@@ -82,13 +187,23 @@ const orderSchema = new mongoose.Schema(
       default: "Pending",
     },
 
+    // =================================================
+    // Razorpay Order
+    // =================================================
+
     razorpayOrderId: {
       type: String,
+
       default: "",
     },
 
+    // =================================================
+    // Razorpay Payment
+    // =================================================
+
     razorpayPaymentId: {
       type: String,
+
       default: "",
     },
 
@@ -98,6 +213,7 @@ const orderSchema = new mongoose.Schema(
 
     razorpayRefundId: {
       type: String,
+
       default: "",
     },
 
@@ -127,6 +243,24 @@ const orderSchema = new mongoose.Schema(
       ],
 
       default: "Pending",
+
+      index: true,
+    },
+
+    // =================================================
+    // Order Status History
+    // =================================================
+
+    statusHistory: {
+      type: [orderStatusHistorySchema],
+
+      default: () => [
+        {
+          status: "Pending",
+
+          changedAt: new Date(),
+        },
+      ],
     },
 
     // =================================================
@@ -135,11 +269,13 @@ const orderSchema = new mongoose.Schema(
 
     stockRestored: {
       type: Boolean,
+
       default: false,
     },
 
     stockRestoredAt: {
       type: Date,
+
       default: null,
     },
 
@@ -157,6 +293,7 @@ const orderSchema = new mongoose.Schema(
 
     cancelledAt: {
       type: Date,
+
       default: null,
     },
   },
@@ -165,5 +302,28 @@ const orderSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+// =====================================================
+// Indexes
+// =====================================================
+
+orderSchema.index({
+  buyer: 1,
+  createdAt: -1,
+});
+
+orderSchema.index({
+  farmer: 1,
+  createdAt: -1,
+});
+
+orderSchema.index({
+  orderStatus: 1,
+  createdAt: -1,
+});
+
+// =====================================================
+// Model
+// =====================================================
 
 module.exports = mongoose.model("Order", orderSchema);
