@@ -2,6 +2,10 @@ const express = require("express");
 
 const router = express.Router();
 
+// =====================================================
+// Controllers
+// =====================================================
+
 const {
   createProduct,
   getProducts,
@@ -13,6 +17,10 @@ const {
   updateProductStatusAdmin,
   restockProduct,
 } = require("../controllers/productController");
+
+// =====================================================
+// Middleware
+// =====================================================
 
 const { protect, authorize } = require("../middleware/authMiddleware");
 
@@ -29,9 +37,11 @@ router.get("/", getProducts);
 // =====================================================
 
 // Get all products including unavailable products
+
 router.get("/admin/all", protect, authorize("admin"), getAllProductsAdmin);
 
 // Activate / deactivate product
+
 router.put(
   "/admin/:id/status",
   protect,
@@ -85,5 +95,9 @@ router.delete("/:id", protect, authorize("farmer"), deleteProduct);
 // =====================================================
 
 router.put("/:id/restock", protect, authorize("farmer"), restockProduct);
+
+// =====================================================
+// Export
+// =====================================================
 
 module.exports = router;

@@ -24,6 +24,17 @@ const parsePositiveInteger = (value) => {
 };
 
 // =====================================================
+// Escape Regex
+// =====================================================
+// Prevent special regex characters in user search input
+// from changing the MongoDB regex pattern.
+// =====================================================
+
+const escapeRegex = (value) => {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+// =====================================================
 // Create Product
 // =====================================================
 
@@ -111,11 +122,6 @@ const createProduct = async (req, res) => {
 
     // -------------------------------------------------
     // Cloudinary files
-    //
-    // multer-storage-cloudinary provides:
-    //
-    // file.path     -> Cloudinary image URL
-    // file.filename -> Cloudinary public ID
     // -------------------------------------------------
 
     const images = req.files.map((file) => ({
@@ -162,8 +168,7 @@ const createProduct = async (req, res) => {
     });
   } catch (error) {
     // -------------------------------------------------
-    // Cleanup uploaded Cloudinary images if DB creation
-    // fails after the upload has already completed.
+    // Cleanup uploaded Cloudinary images
     // -------------------------------------------------
 
     if (req.files && req.files.length > 0) {
@@ -186,7 +191,7 @@ const createProduct = async (req, res) => {
 };
 
 // =====================================================
-// Get All Products
+// Get All Marketplace Products
 // =====================================================
 
 const getProducts = async (req, res) => {
@@ -197,43 +202,130 @@ const getProducts = async (req, res) => {
       location,
       minPrice,
       maxPrice,
-      sort,
+      sort = "newest",
       page = 1,
       limit = 10,
     } = req.query;
 
-    let query = {};
+    // =================================================
+    // Base Query
+    // =================================================
+    //
+    // Marketplace only shows products that are:
+    //
+    // 1. Available
+    // 2. In stock
+    //
+    // =================================================
 
-    // -------------------------------------------------
+    const query = {
+      isAvailable: true,
+      quantity: {
+        $gt: 0,
+      },
+    };
+
+    // =================================================
     // Search
-    // -------------------------------------------------
+    // =================================================
+    //
+    // Search across:
+    //
+    // 1. Product name
+    // 2. Category
+    // 3. Location
+    // 4. Description
+    //
+    // Examples:
+    //
+    // apple
+    // fruit
+    // allahabad
+    // fresh organic
+    //
+    // Case-insensitive + partial matching.
+    // =================================================
 
-    if (search?.trim()) {
-      query.name = {
-        $regex: search.trim(),
+    const cleanedSearch = search?.trim();
+
+    if (cleanedSearch) {
+      const escapedSearch = escapeRegex(cleanedSearch);
+
+      const searchRegex = {
+        $regex: escapedSearch,
+        $options: "i",
+      };
+
+      query.$or = [
+        {
+          name: searchRegex,
+        },
+        {
+          category: searchRegex,
+        },
+        {
+          location: searchRegex,
+        },
+        {
+          description: searchRegex,
+        },
+      ];
+    }
+
+    // =================================================
+    // Category Filter
+    // =================================================
+    //
+    // Exact category match, but case-insensitive.
+    //
+    // Fruits
+    // vegetables
+    // GRAINS
+    //
+    // all work correctly.
+    // =================================================
+
+    const cleanedCategory = category?.trim();
+
+    if (cleanedCategory) {
+      const escapedCategory = escapeRegex(cleanedCategory);
+
+      query.category = {
+        $regex: `^${escapedCategory}$`,
         $options: "i",
       };
     }
 
-    // -------------------------------------------------
-    // Category
-    // -------------------------------------------------
+    // =================================================
+    // Location Filter
+    // =================================================
+    //
+    // Partial + case-insensitive matching.
+    //
+    // Example:
+    //
+    // "Allahabad"
+    //
+    // can match:
+    //
+    // "Allahabad, Uttar Pradesh"
+    //
+    // =================================================
 
-    if (category?.trim()) {
-      query.category = category.trim();
+    const cleanedLocation = location?.trim();
+
+    if (cleanedLocation) {
+      const escapedLocation = escapeRegex(cleanedLocation);
+
+      query.location = {
+        $regex: escapedLocation,
+        $options: "i",
+      };
     }
 
-    // -------------------------------------------------
-    // Location
-    // -------------------------------------------------
-
-    if (location?.trim()) {
-      query.location = location.trim();
-    }
-
-    // -------------------------------------------------
+    // =================================================
     // Price Filter
-    // -------------------------------------------------
+    // =================================================
 
     const parsedMinPrice =
       minPrice !== undefined && minPrice !== "" ? Number(minPrice) : null;
@@ -241,65 +333,71 @@ const getProducts = async (req, res) => {
     const parsedMaxPrice =
       maxPrice !== undefined && maxPrice !== "" ? Number(maxPrice) : null;
 
+    // -------------------------------------------------
+    // Validate Minimum Price
+    // -------------------------------------------------
+
     if (
       parsedMinPrice !== null &&
-      Number.isFinite(parsedMinPrice) &&
-      parsedMinPrice >= 0
+      (!Number.isFinite(parsedMinPrice) || parsedMinPrice < 0)
     ) {
-      query.price = {
-        ...(query.price || {}),
-        $gte: parsedMinPrice,
-      };
+      return res.status(400).json({
+        success: false,
+        message: "Minimum price must be a valid non-negative number",
+      });
     }
+
+    // -------------------------------------------------
+    // Validate Maximum Price
+    // -------------------------------------------------
 
     if (
       parsedMaxPrice !== null &&
-      Number.isFinite(parsedMaxPrice) &&
-      parsedMaxPrice >= 0
+      (!Number.isFinite(parsedMaxPrice) || parsedMaxPrice < 0)
     ) {
-      query.price = {
-        ...(query.price || {}),
-        $lte: parsedMaxPrice,
-      };
+      return res.status(400).json({
+        success: false,
+        message: "Maximum price must be a valid non-negative number",
+      });
     }
 
     // -------------------------------------------------
-    // Only available products
+    // Validate Price Range
     // -------------------------------------------------
 
-    query.isAvailable = true;
-
-    // -------------------------------------------------
-    // Sorting
-    // -------------------------------------------------
-
-    let sortOption = {
-      createdAt: -1,
-    };
-
-    if (sort === "oldest") {
-      sortOption = {
-        createdAt: 1,
-      };
-    }
-
-    if (sort === "priceLow") {
-      sortOption = {
-        price: 1,
-      };
-    }
-
-    if (sort === "priceHigh") {
-      sortOption = {
-        price: -1,
-      };
+    if (
+      parsedMinPrice !== null &&
+      parsedMaxPrice !== null &&
+      parsedMinPrice > parsedMaxPrice
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Minimum price cannot be greater than maximum price",
+      });
     }
 
     // -------------------------------------------------
-    // Pagination
+    // Apply Price Filter
     // -------------------------------------------------
+
+    if (parsedMinPrice !== null || parsedMaxPrice !== null) {
+      query.price = {};
+
+      if (parsedMinPrice !== null) {
+        query.price.$gte = parsedMinPrice;
+      }
+
+      if (parsedMaxPrice !== null) {
+        query.price.$lte = parsedMaxPrice;
+      }
+    }
+
+    // =================================================
+    // Pagination Validation
+    // =================================================
 
     const parsedPage = Number(page);
+
     const parsedLimit = Number(limit);
 
     const currentPage =
@@ -310,34 +408,150 @@ const getProducts = async (req, res) => {
         ? parsedLimit
         : 10;
 
-    const skip = (currentPage - 1) * pageSize;
+    // =================================================
+    // Sorting
+    // =================================================
 
-    // -------------------------------------------------
-    // Count
-    // -------------------------------------------------
+    let sortOption;
+
+    switch (sort) {
+      // -------------------------------------------------
+      // Newest
+      // -------------------------------------------------
+
+      case "newest":
+        sortOption = {
+          createdAt: -1,
+          _id: -1,
+        };
+        break;
+
+      // -------------------------------------------------
+      // Oldest
+      // -------------------------------------------------
+
+      case "oldest":
+        sortOption = {
+          createdAt: 1,
+          _id: 1,
+        };
+        break;
+
+      // -------------------------------------------------
+      // Price Low → High
+      // -------------------------------------------------
+
+      case "priceLow":
+        sortOption = {
+          price: 1,
+          createdAt: -1,
+          _id: -1,
+        };
+        break;
+
+      // -------------------------------------------------
+      // Price High → Low
+      // -------------------------------------------------
+
+      case "priceHigh":
+        sortOption = {
+          price: -1,
+          createdAt: -1,
+          _id: -1,
+        };
+        break;
+
+      // -------------------------------------------------
+      // Name A → Z
+      // -------------------------------------------------
+
+      case "nameAZ":
+        sortOption = {
+          name: 1,
+          _id: 1,
+        };
+        break;
+
+      // -------------------------------------------------
+      // Name Z → A
+      // -------------------------------------------------
+
+      case "nameZA":
+        sortOption = {
+          name: -1,
+          _id: -1,
+        };
+        break;
+
+      // -------------------------------------------------
+      // Default
+      // -------------------------------------------------
+
+      default:
+        sortOption = {
+          createdAt: -1,
+          _id: -1,
+        };
+        break;
+    }
+
+    // =================================================
+    // Total Products
+    // =================================================
 
     const totalProducts = await Product.countDocuments(query);
 
+    // =================================================
+    // Total Pages
+    // =================================================
+
     const totalPages = Math.ceil(totalProducts / pageSize);
 
-    // -------------------------------------------------
-    // Products
-    // -------------------------------------------------
+    // =================================================
+    // Safe Page
+    // =================================================
+    //
+    // If the requested page doesn't exist anymore,
+    // return the last available page.
+    //
+    // Example:
+    //
+    // User is on page 3.
+    // Products are deleted.
+    // Only 2 pages remain.
+    //
+    // Instead of returning an empty page 3,
+    // automatically return page 2.
+    // =================================================
+
+    const safePage =
+      totalPages > 0 && currentPage > totalPages ? totalPages : currentPage;
+
+    // =================================================
+    // Skip
+    // =================================================
+
+    const skip = (safePage - 1) * pageSize;
+
+    // =================================================
+    // Fetch Products
+    // =================================================
 
     const products = await Product.find(query)
       .populate("farmer", "name email")
       .sort(sortOption)
       .skip(skip)
-      .limit(pageSize);
+      .limit(pageSize)
+      .lean();
 
-    // -------------------------------------------------
+    // =================================================
     // Response
-    // -------------------------------------------------
+    // =================================================
 
     return res.status(200).json({
       success: true,
 
-      currentPage,
+      currentPage: safePage,
 
       totalPages,
 
@@ -348,9 +562,11 @@ const getProducts = async (req, res) => {
       products,
     });
   } catch (error) {
+    console.error("Get products error:", error);
+
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || "Failed to fetch products",
     });
   }
 };
@@ -520,26 +736,13 @@ const updateProduct = async (req, res) => {
       updateData.quantity = quantity;
 
       // =================================================
-      // Automatically synchronize availability
+      // Synchronize Availability
       // =================================================
 
       updateData.isAvailable = quantity > 0;
 
       // =================================================
-      // Reset Low Stock Alert After Restocking
-      // =================================================
-      //
-      // Example:
-      //
-      // 0 → 20
-      // Reset alert state.
-      //
-      // 20 → 5
-      // Reset alert state so the next purchase can
-      // generate a new low-stock notification.
-      //
-      // 4 → 3
-      // Keep existing alert state.
+      // Reset Low Stock Alert
       // =================================================
 
       if (quantity === 0) {
@@ -835,7 +1038,9 @@ const updateProductStatusAdmin = async (req, res) => {
 const restockProduct = async (req, res) => {
   try {
     const farmerId = req.user._id;
+
     const { id } = req.params;
+
     const { quantity } = req.body;
 
     // =================================================
@@ -902,7 +1107,7 @@ const restockProduct = async (req, res) => {
     // Response
     // =================================================
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: `${product.name} restocked successfully`,
       product,
@@ -910,12 +1115,13 @@ const restockProduct = async (req, res) => {
   } catch (error) {
     console.error("Restock product error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message || "Failed to restock product",
     });
   }
 };
+
 // =====================================================
 // Export
 // =====================================================
@@ -929,5 +1135,5 @@ module.exports = {
   deleteProduct,
   getAllProductsAdmin,
   updateProductStatusAdmin,
-  restockProduct
+  restockProduct,
 };
