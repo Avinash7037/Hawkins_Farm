@@ -70,6 +70,12 @@ const auctionRoutes = require("./routes/auctionRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 
 // =====================================================
+// Weather Routes
+// =====================================================
+
+const weatherRoutes = require("./routes/weatherRoutes");
+
+// =====================================================
 // Error Middleware
 // =====================================================
 
@@ -150,19 +156,36 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/addresses", addressRoutes);
 
 // =====================================================
+// Weather Routes
+// =====================================================
+//
+// GET /api/weather/search?query=Prayagraj
+//
+// GET /api/weather
+// ?latitude=25.4358
+// &longitude=81.8463
+//
+// =====================================================
+
+app.use("/api/weather", weatherRoutes);
+
+// =====================================================
 // Auction Routes
 // =====================================================
 //
 // Public:
+//
 // GET  /api/auctions/live
 // GET  /api/auctions/:id
 //
 // Farmer:
+//
 // POST /api/auctions
 // GET  /api/auctions/farmer/my-auctions
 // PUT  /api/auctions/:id/cancel
 //
 // Buyer:
+//
 // POST /api/auctions/:id/bid
 //
 // =====================================================

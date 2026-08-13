@@ -16,8 +16,8 @@ function CTA() {
             Heading
         ================================================= */}
 
-        <h2 className="text-5xl font-bold text-white">
-          Ready to Experience Fresh Farm Products?
+        <h2 className="text-4xl font-bold text-white sm:text-5xl">
+          Explore Hawkins Farm
         </h2>
 
         {/* =================================================
@@ -26,15 +26,18 @@ function CTA() {
 
         <p
           className="
+            mx-auto
             mt-6
+            max-w-2xl
             text-lg
+            leading-8
             text-emerald-100
 
             dark:text-emerald-200
           "
         >
-          Join thousands of customers and farmers building a better food
-          ecosystem.
+          Discover agricultural products, connect with farmers, place orders,
+          and participate in live auctions through one platform.
         </p>
 
         {/* =================================================
@@ -49,7 +52,8 @@ function CTA() {
             className="
               rounded-xl
               bg-white
-              px-8 py-4
+              px-8
+              py-4
               font-semibold
               text-emerald-600
               transition
@@ -68,8 +72,10 @@ function CTA() {
             to="/register"
             className="
               rounded-xl
-              border-2 border-white
-              px-8 py-4
+              border-2
+              border-white
+              px-8
+              py-4
               font-semibold
               text-white
               transition

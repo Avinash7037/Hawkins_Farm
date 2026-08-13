@@ -1,11 +1,15 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+
 import { categories } from "../data/categories";
 
 function Categories() {
   return (
     <section
       className="
-        bg-white py-24
+        bg-white
+        py-24
+
         dark:bg-gray-950
       "
     >
@@ -17,7 +21,8 @@ function Categories() {
         <div className="mb-14 text-center">
           <h2
             className="
-              text-4xl font-bold
+              text-4xl
+              font-bold
               text-gray-900
 
               dark:text-white
@@ -28,13 +33,16 @@ function Categories() {
 
           <p
             className="
-              mx-auto mt-4 max-w-xl
+              mx-auto
+              mt-4
+              max-w-xl
               text-gray-600
 
               dark:text-gray-300
             "
           >
-            Discover fresh farm products organized into popular categories.
+            Discover agricultural products available from farmers on Hawkins
+            Farm.
           </p>
         </div>
 
@@ -42,7 +50,7 @@ function Categories() {
             Categories
         ================================================= */}
 
-        <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-5">
           {categories.map((category, index) => {
             const Icon = category.icon;
 
@@ -56,59 +64,81 @@ function Categories() {
                   delay: index * 0.1,
                 }}
                 viewport={{ once: true }}
-                className="
-                  cursor-pointer
-                  rounded-3xl
-                  bg-white
-                  p-6
-                  text-center
-                  shadow-lg
-                  transition-all
-                  duration-300
-                  hover:shadow-2xl
-
-                  dark:bg-gray-900
-                  dark:shadow-gray-950/50
-                  dark:hover:shadow-black/50
-                "
               >
-                {/* =================================================
-                    Category Icon
-                ================================================= */}
-
-                <div
-                  className={`
-                    mx-auto flex h-16 w-16
-                    items-center justify-center
-                    rounded-full
-                    ${category.color}
-                  `}
-                >
-                  <Icon
-                    size={30}
-                    className="
-                      text-emerald-700
-                      dark:text-emerald-300
-                    "
-                  />
-                </div>
-
-                {/* =================================================
-                    Category Name
-                ================================================= */}
-
-                <h3
+                <Link
+                  to={`/products?category=${encodeURIComponent(category.name)}`}
                   className="
-                    mt-5
-                    text-lg
-                    font-semibold
-                    text-gray-900
+                    block
+                    rounded-3xl
+                    bg-white
+                    p-6
+                    text-center
+                    shadow-lg
+                    transition-all
+                    duration-300
+                    hover:-translate-y-1
+                    hover:shadow-2xl
 
-                    dark:text-gray-100
+                    dark:bg-gray-900
+                    dark:shadow-gray-950/50
+                    dark:hover:shadow-black/50
                   "
                 >
-                  {category.name}
-                </h3>
+                  {/* =================================================
+                      Category Icon
+                  ================================================= */}
+
+                  <div
+                    className={`
+                      mx-auto
+                      flex
+                      h-16
+                      w-16
+                      items-center
+                      justify-center
+                      rounded-full
+                      ${category.color}
+                    `}
+                  >
+                    <Icon
+                      size={30}
+                      className="
+                        text-emerald-700
+
+                        dark:text-emerald-300
+                      "
+                    />
+                  </div>
+
+                  {/* =================================================
+                      Category Name
+                  ================================================= */}
+
+                  <h3
+                    className="
+                      mt-5
+                      text-lg
+                      font-semibold
+                      text-gray-900
+
+                      dark:text-gray-100
+                    "
+                  >
+                    {category.name}
+                  </h3>
+
+                  <p
+                    className="
+                      mt-2
+                      text-sm
+                      text-gray-500
+
+                      dark:text-gray-400
+                    "
+                  >
+                    View products
+                  </p>
+                </Link>
               </motion.div>
             );
           })}

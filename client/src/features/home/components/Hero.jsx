@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import heroImage from "../../../assets/images/hero/hero.jpg";
 
@@ -33,14 +34,17 @@ function Hero() {
             transition={{ duration: 0.8 }}
           >
             {/* =================================================
-                Trust Badge
+                Project Badge
             ================================================= */}
 
             <span
               className="
-                mb-8 inline-block rounded-full
+                mb-8
+                inline-block
+                rounded-full
                 bg-emerald-100
-                px-5 py-2
+                px-5
+                py-2
                 font-medium
                 text-emerald-700
 
@@ -48,7 +52,7 @@ function Hero() {
                 dark:text-emerald-300
               "
             >
-              🌱 Trusted by 1,200+ Farmers
+              🌱 AI-powered digital marketplace for farmers and buyers
             </span>
 
             {/* =================================================
@@ -57,7 +61,9 @@ function Hero() {
 
             <h1
               className="
-                text-5xl font-extrabold leading-tight
+                text-5xl
+                font-extrabold
+                leading-tight
                 text-gray-900
                 lg:text-7xl
 
@@ -76,15 +82,19 @@ function Hero() {
 
             <p
               className="
-                mt-8 max-w-xl
-                text-lg leading-8
+                mt-8
+                max-w-xl
+                text-lg
+                leading-8
                 text-gray-600
 
                 dark:text-gray-300
               "
             >
-              Buy vegetables, fruits, grains and dairy products directly from
-              trusted farmers across India while supporting local agriculture.
+              Hawkins Farm connects farmers and buyers through a digital
+              marketplace for agricultural products, with online orders, secure
+              payments, live auctions, direct communication, and AI-powered
+              assistance.
             </p>
 
             {/* =================================================
@@ -94,12 +104,13 @@ function Hero() {
             <div className="mt-10 flex flex-wrap gap-5">
               {/* Explore Marketplace */}
 
-              <button
-                type="button"
+              <Link
+                to="/products"
                 className="
                   rounded-xl
                   bg-emerald-600
-                  px-8 py-4
+                  px-8
+                  py-4
                   font-semibold
                   text-white
                   transition
@@ -110,17 +121,21 @@ function Hero() {
                 "
               >
                 Explore Marketplace
-              </button>
+              </Link>
 
               {/* Become a Farmer */}
 
-              <button
-                type="button"
+              <Link
+                to="/register"
                 className="
-                  flex items-center gap-2
+                  flex
+                  items-center
+                  gap-2
                   rounded-xl
-                  border-2 border-emerald-600
-                  px-8 py-4
+                  border-2
+                  border-emerald-600
+                  px-8
+                  py-4
                   font-semibold
                   text-emerald-600
                   transition
@@ -133,11 +148,11 @@ function Hero() {
               >
                 Become a Farmer
                 <ArrowRight size={18} />
-              </button>
+              </Link>
             </div>
 
             {/* =================================================
-                Statistics
+                Real Project Features
             ================================================= */}
 
             <HeroStats />
@@ -154,7 +169,7 @@ function Hero() {
           >
             <img
               src={heroImage}
-              alt="Fresh produce from local farmers"
+              alt="Fresh agricultural produce"
               className="
                 w-full
                 rounded-3xl

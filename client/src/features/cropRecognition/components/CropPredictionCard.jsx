@@ -14,14 +14,17 @@ import { predictCrop } from "../cropRecognitionService";
 
 function CropPredictionCard() {
   const navigate = useNavigate();
+
   const fileInputRef = useRef(null);
 
   const [selectedImage, setSelectedImage] = useState(null);
+
   const [previewUrl, setPreviewUrl] = useState("");
 
   const [prediction, setPrediction] = useState(null);
 
   const [loading, setLoading] = useState(false);
+
   const [error, setError] = useState("");
 
   // =====================================================
@@ -48,62 +51,79 @@ function CropPredictionCard() {
     }
 
     setError("");
+
     setPrediction(null);
 
-    // ---------------------------------------------------
+    // ===================================================
     // Validate File Type
-    // ---------------------------------------------------
+    // ===================================================
 
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
     if (!allowedTypes.includes(file.type)) {
       setSelectedImage(null);
+
       setPreviewUrl("");
+
       setError("Please upload a JPG, JPEG, PNG or WEBP image.");
+
       event.target.value = "";
+
       return;
     }
 
-    // ---------------------------------------------------
+    // ===================================================
     // Validate File Size
-    // ---------------------------------------------------
+    // ===================================================
 
     const maxSize = 5 * 1024 * 1024;
 
     if (file.size > maxSize) {
       setSelectedImage(null);
+
       setPreviewUrl("");
+
       setError("Image must be smaller than 5 MB.");
+
       event.target.value = "";
+
       return;
     }
 
-    // ---------------------------------------------------
-    // Create Preview
-    // ---------------------------------------------------
+    // ===================================================
+    // Revoke Previous URL
+    // ===================================================
 
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
 
+    // ===================================================
+    // Create Preview
+    // ===================================================
+
     const newPreviewUrl = URL.createObjectURL(file);
 
     setSelectedImage(file);
+
     setPreviewUrl(newPreviewUrl);
   };
 
   // =====================================================
-  // Predict
+  // Predict Crop
   // =====================================================
 
   const handlePredict = async () => {
     if (!selectedImage) {
       setError("Please select a crop image first.");
+
       return;
     }
 
     setLoading(true);
+
     setError("");
+
     setPrediction(null);
 
     try {
@@ -126,11 +146,13 @@ function CropPredictionCard() {
   };
 
   // =====================================================
-  // Add Predicted Crop To Product
+  // Add Crop
   // =====================================================
 
   const handleAddCrop = () => {
     const predictedCrop = prediction?.prediction?.crop;
+
+    const predictedCategory = prediction?.prediction?.category;
 
     if (!predictedCrop) {
       return;
@@ -141,12 +163,14 @@ function CropPredictionCard() {
     navigate("/farmer/products", {
       state: {
         predictedCrop: formattedCrop,
+
+        predictedCategory: predictedCategory || "Other",
       },
     });
   };
 
   // =====================================================
-  // Clear
+  // Clear Image
   // =====================================================
 
   const handleClear = () => {
@@ -159,8 +183,11 @@ function CropPredictionCard() {
     }
 
     setSelectedImage(null);
+
     setPreviewUrl("");
+
     setPrediction(null);
+
     setError("");
 
     if (fileInputRef.current) {
@@ -173,12 +200,26 @@ function CropPredictionCard() {
   // =====================================================
 
   return (
-    <section className="px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
+    <section
+      className="
+        px-4
+        py-12
+        sm:px-6
+        lg:px-8
+      "
+    >
+      <div
+        className="
+          mx-auto
+          max-w-7xl
+        "
+      >
         <div
           className="
-            overflow-hidden rounded-3xl
-            border border-emerald-100
+            overflow-hidden
+            rounded-3xl
+            border
+            border-emerald-100
             bg-gradient-to-br
             from-emerald-50
             via-white
@@ -191,19 +232,33 @@ function CropPredictionCard() {
             dark:to-green-950
           "
         >
-          <div className="grid gap-8 p-6 md:p-10 lg:grid-cols-2 lg:items-center">
+          <div
+            className="
+              grid
+              gap-8
+              p-6
+              md:p-10
+              lg:grid-cols-2
+              lg:items-center
+            "
+          >
             {/* =================================================
-                Information
+                Left Information
             ================================================= */}
 
             <div>
               <div
                 className="
-                  mb-4 inline-flex items-center gap-2
+                  mb-4
+                  inline-flex
+                  items-center
+                  gap-2
                   rounded-full
                   bg-emerald-100
-                  px-4 py-2
-                  text-sm font-semibold
+                  px-4
+                  py-2
+                  text-sm
+                  font-semibold
                   text-emerald-700
 
                   dark:bg-emerald-900
@@ -216,7 +271,9 @@ function CropPredictionCard() {
 
               <h2
                 className="
-                  text-3xl font-bold tracking-tight
+                  text-3xl
+                  font-bold
+                  tracking-tight
                   text-gray-900
                   sm:text-4xl
 
@@ -228,8 +285,10 @@ function CropPredictionCard() {
 
               <p
                 className="
-                  mt-4 max-w-xl
-                  text-base leading-7
+                  mt-4
+                  max-w-xl
+                  text-base
+                  leading-7
                   text-gray-600
                   sm:text-lg
 
@@ -240,29 +299,68 @@ function CropPredictionCard() {
                 AI-powered recognition system identify it for you.
               </p>
 
-              <div className="mt-6 space-y-3 text-sm text-gray-600 dark:text-gray-300">
-                <div className="flex items-center gap-3">
+              <div
+                className="
+                  mt-6
+                  space-y-3
+                  text-sm
+                  text-gray-600
+
+                  dark:text-gray-300
+                "
+              >
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-3
+                  "
+                >
                   <CheckCircle2
                     size={18}
-                    className="shrink-0 text-emerald-600 dark:text-emerald-400"
+                    className="
+                      shrink-0
+                      text-emerald-600
+                      dark:text-emerald-400
+                    "
                   />
 
                   <span>Upload a clear crop image</span>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-3
+                  "
+                >
                   <CheckCircle2
                     size={18}
-                    className="shrink-0 text-emerald-600 dark:text-emerald-400"
+                    className="
+                      shrink-0
+                      text-emerald-600
+                      dark:text-emerald-400
+                    "
                   />
 
-                  <span>Get the predicted crop and confidence</span>
+                  <span>Get crop, category and confidence</span>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-3
+                  "
+                >
                   <CheckCircle2
                     size={18}
-                    className="shrink-0 text-emerald-600 dark:text-emerald-400"
+                    className="
+                      shrink-0
+                      text-emerald-600
+                      dark:text-emerald-400
+                    "
                   />
 
                   <span>Use the result to create your product</span>
@@ -271,13 +369,14 @@ function CropPredictionCard() {
             </div>
 
             {/* =================================================
-                Prediction Panel
+                Right Prediction Panel
             ================================================= */}
 
             <div
               className="
                 rounded-2xl
-                border border-gray-200
+                border
+                border-gray-200
                 bg-white
                 p-5
                 shadow-sm
@@ -296,10 +395,16 @@ function CropPredictionCard() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="
-                    flex min-h-72 w-full
-                    flex-col items-center justify-center
+                    flex
+                    min-h-72
+                    w-full
+                    flex-col
+                    items-center
+                    justify-center
                     rounded-2xl
-                    border-2 border-dashed border-gray-300
+                    border-2
+                    border-dashed
+                    border-gray-300
                     px-6
                     text-center
                     transition
@@ -313,7 +418,11 @@ function CropPredictionCard() {
                 >
                   <div
                     className="
-                      flex h-16 w-16 items-center justify-center
+                      flex
+                      h-16
+                      w-16
+                      items-center
+                      justify-center
                       rounded-full
                       bg-emerald-100
                       text-emerald-600
@@ -327,7 +436,9 @@ function CropPredictionCard() {
 
                   <h3
                     className="
-                      mt-5 text-lg font-semibold
+                      mt-5
+                      text-lg
+                      font-semibold
                       text-gray-900
 
                       dark:text-gray-100
@@ -338,8 +449,10 @@ function CropPredictionCard() {
 
                   <p
                     className="
-                      mt-2 max-w-sm
-                      text-sm text-gray-500
+                      mt-2
+                      max-w-sm
+                      text-sm
+                      text-gray-500
 
                       dark:text-gray-400
                     "
@@ -349,10 +462,14 @@ function CropPredictionCard() {
 
                   <span
                     className="
-                      mt-5 inline-flex items-center gap-2
+                      mt-5
+                      inline-flex
+                      items-center
+                      gap-2
                       rounded-lg
                       bg-emerald-600
-                      px-5 py-3
+                      px-5
+                      py-3
                       font-semibold
                       text-white
                       transition
@@ -366,14 +483,15 @@ function CropPredictionCard() {
               )}
 
               {/* =================================================
-                  Image Preview
+                  Preview
               ================================================= */}
 
               {previewUrl && (
                 <div>
                   <div
                     className="
-                      relative overflow-hidden
+                      relative
+                      overflow-hidden
                       rounded-2xl
                       bg-gray-100
 
@@ -383,7 +501,11 @@ function CropPredictionCard() {
                     <img
                       src={previewUrl}
                       alt="Selected crop"
-                      className="h-72 w-full object-cover"
+                      className="
+                        h-72
+                        w-full
+                        object-cover
+                      "
                     />
 
                     <button
@@ -391,7 +513,9 @@ function CropPredictionCard() {
                       onClick={handleClear}
                       disabled={loading}
                       className="
-                        absolute right-3 top-3
+                        absolute
+                        right-3
+                        top-3
                         rounded-full
                         bg-black/60
                         p-2
@@ -408,21 +532,34 @@ function CropPredictionCard() {
                   </div>
 
                   {/* =================================================
-                      Action Buttons
+                      Buttons
                   ================================================= */}
 
                   {!prediction && (
-                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                    <div
+                      className="
+                        mt-4
+                        flex
+                        flex-col
+                        gap-3
+                        sm:flex-row
+                      "
+                    >
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={loading}
                         className="
-                          inline-flex flex-1
-                          items-center justify-center gap-2
+                          inline-flex
+                          flex-1
+                          items-center
+                          justify-center
+                          gap-2
                           rounded-lg
-                          border border-gray-300
-                          px-5 py-3
+                          border
+                          border-gray-300
+                          px-5
+                          py-3
                           font-semibold
                           text-gray-700
                           transition
@@ -444,11 +581,15 @@ function CropPredictionCard() {
                         onClick={handlePredict}
                         disabled={loading}
                         className="
-                          inline-flex flex-1
-                          items-center justify-center gap-2
+                          inline-flex
+                          flex-1
+                          items-center
+                          justify-center
+                          gap-2
                           rounded-lg
                           bg-emerald-600
-                          px-5 py-3
+                          px-5
+                          py-3
                           font-semibold
                           text-white
                           transition
@@ -459,7 +600,12 @@ function CropPredictionCard() {
                       >
                         {loading ? (
                           <>
-                            <Loader2 size={18} className="animate-spin" />
+                            <Loader2
+                              size={18}
+                              className="
+                                animate-spin
+                              "
+                            />
                             Identifying...
                           </>
                         ) : (
@@ -479,8 +625,10 @@ function CropPredictionCard() {
                   {prediction?.prediction && (
                     <div
                       className="
-                        mt-5 rounded-2xl
-                        border border-emerald-200
+                        mt-5
+                        rounded-2xl
+                        border
+                        border-emerald-200
                         bg-emerald-50
                         p-5
 
@@ -488,11 +636,23 @@ function CropPredictionCard() {
                         dark:bg-emerald-950/50
                       "
                     >
-                      <div className="flex items-start justify-between gap-4">
+                      {/* =============================================
+                          Crop + Confidence
+                      ============================================= */}
+
+                      <div
+                        className="
+                          flex
+                          items-start
+                          justify-between
+                          gap-4
+                        "
+                      >
                         <div>
                           <p
                             className="
-                              text-sm font-medium
+                              text-sm
+                              font-medium
                               text-emerald-700
 
                               dark:text-emerald-300
@@ -503,7 +663,9 @@ function CropPredictionCard() {
 
                           <h3
                             className="
-                              mt-1 text-3xl font-bold
+                              mt-1
+                              text-3xl
+                              font-bold
                               text-gray-900
 
                               dark:text-white
@@ -513,11 +675,14 @@ function CropPredictionCard() {
                           </h3>
                         </div>
 
+                        {/* Confidence */}
+
                         <div
                           className="
                             rounded-xl
                             bg-white
-                            px-4 py-3
+                            px-4
+                            py-3
                             text-center
                             shadow-sm
 
@@ -526,7 +691,8 @@ function CropPredictionCard() {
                         >
                           <p
                             className="
-                              text-xs font-medium
+                              text-xs
+                              font-medium
                               text-gray-500
 
                               dark:text-gray-400
@@ -537,7 +703,9 @@ function CropPredictionCard() {
 
                           <p
                             className="
-                              mt-1 text-xl font-bold
+                              mt-1
+                              text-xl
+                              font-bold
                               text-emerald-600
 
                               dark:text-emerald-400
@@ -548,15 +716,84 @@ function CropPredictionCard() {
                         </div>
                       </div>
 
-                      {/* =================================================
+                      {/* =============================================
+                          Category
+                      ============================================= */}
+
+                      <div
+                        className="
+                          mt-4
+                          flex
+                          items-center
+                          justify-between
+                          rounded-xl
+                          border
+                          border-emerald-200
+                          bg-white
+                          px-4
+                          py-3
+
+                          dark:border-emerald-800
+                          dark:bg-gray-800
+                        "
+                      >
+                        <div>
+                          <p
+                            className="
+                              text-xs
+                              font-medium
+                              text-gray-500
+
+                              dark:text-gray-400
+                            "
+                          >
+                            Category
+                          </p>
+
+                          <p
+                            className="
+                              mt-1
+                              text-lg
+                              font-bold
+                              text-gray-900
+
+                              dark:text-white
+                            "
+                          >
+                            {prediction.prediction.category || "Other"}
+                          </p>
+                        </div>
+
+                        <div
+                          className="
+                            flex
+                            h-10
+                            w-10
+                            items-center
+                            justify-center
+                            rounded-full
+                            bg-emerald-100
+                            text-emerald-600
+
+                            dark:bg-emerald-900
+                            dark:text-emerald-400
+                          "
+                        >
+                          <Sparkles size={19} />
+                        </div>
+                      </div>
+
+                      {/* =============================================
                           Top Predictions
-                      ================================================= */}
+                      ============================================= */}
 
                       {prediction.topPredictions?.length > 0 && (
                         <div className="mt-5">
                           <p
                             className="
-                              mb-3 text-sm font-semibold
+                              mb-3
+                              text-sm
+                              font-semibold
                               text-gray-700
 
                               dark:text-gray-300
@@ -570,53 +807,78 @@ function CropPredictionCard() {
                               <div
                                 key={`${item.crop}-${index}`}
                                 className="
-                                    flex items-center justify-between
                                     rounded-lg
                                     bg-white
-                                    px-4 py-3
+                                    px-4
+                                    py-3
 
                                     dark:bg-gray-800
                                   "
                               >
-                                <span
+                                <div
                                   className="
-                                      font-medium
-                                      text-gray-800
-
-                                      dark:text-gray-200
+                                      flex
+                                      items-center
+                                      justify-between
+                                      gap-3
                                     "
                                 >
-                                  {index + 1}. {item.crop.replaceAll("_", " ")}
-                                </span>
+                                  <span
+                                    className="
+                                        font-medium
+                                        text-gray-800
 
-                                <span
+                                        dark:text-gray-200
+                                      "
+                                  >
+                                    {index + 1}.{" "}
+                                    {item.crop.replaceAll("_", " ")}
+                                  </span>
+
+                                  <span
+                                    className="
+                                        text-sm
+                                        font-semibold
+                                        text-gray-600
+
+                                        dark:text-gray-400
+                                      "
+                                  >
+                                    {item.confidence}%
+                                  </span>
+                                </div>
+
+                                <p
                                   className="
-                                      text-sm font-semibold
-                                      text-gray-600
+                                      mt-1
+                                      text-xs
+                                      text-gray-500
 
                                       dark:text-gray-400
                                     "
                                 >
-                                  {item.confidence}%
-                                </span>
+                                  Category: {item.category || "Other"}
+                                </p>
                               </div>
                             ))}
                           </div>
                         </div>
                       )}
 
-                      {/* =================================================
+                      {/* =============================================
                           Add Crop
-                      ================================================= */}
+                      ============================================= */}
 
                       <button
                         type="button"
                         onClick={handleAddCrop}
                         className="
-                          mt-5 w-full
+                          mt-5
+                          w-full
                           rounded-lg
                           bg-emerald-600
-                          px-5 py-3
+                          px-5
+                          py-3
                           font-semibold
                           text-white
                           transition
@@ -628,7 +890,9 @@ function CropPredictionCard() {
 
                       <p
                         className="
-                          mt-2 text-center text-xs
+                          mt-2
+                          text-center
+                          text-xs
                           text-gray-500
 
                           dark:text-gray-400
@@ -649,11 +913,14 @@ function CropPredictionCard() {
               {error && (
                 <div
                   className="
-                    mt-4 rounded-lg
-                    border border-red-200
+                    mt-4
+                    rounded-lg
+                    border
+                    border-red-200
                     bg-red-50
                     p-4
-                    text-sm text-red-700
+                    text-sm
+                    text-red-700
 
                     dark:border-red-900
                     dark:bg-red-950/50
@@ -665,13 +932,18 @@ function CropPredictionCard() {
               )}
 
               {/* =================================================
-                  Hidden File Input
+                  Hidden Input
               ================================================= */}
 
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
+                accept="
+                  image/jpeg,
+                  image/jpg,
+                  image/png,
+                  image/webp
+                "
                 onChange={handleImageChange}
                 className="hidden"
               />

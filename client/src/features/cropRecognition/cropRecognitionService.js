@@ -4,7 +4,7 @@ import axios from "axios";
 // ML API URL
 // =====================================================
 
-const ML_API_URL = import.meta.env.VITE_ML_API_URL || "http://localhost:8000";
+const ML_API_URL = import.meta.env.VITE_ML_API_URL || "http://localhost:8001";
 
 // =====================================================
 // Predict Crop From Image
