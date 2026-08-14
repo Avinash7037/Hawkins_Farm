@@ -2,7 +2,7 @@
 
 > **AI-powered digital marketplace for farmers and buyers**
 
-🔗 **Live Demo:** [Add your Render URL here](YOUR_RENDER_URL)
+🔗 **Live Demo:** https://hawkins-frontend.onrender.com
 
 Hawkins Farm is a **full-stack, role-based agricultural marketplace** designed to connect farmers and buyers through a unified digital platform. The system provides product discovery and management, cart and order processing, online payments, real-time farmer-buyer communication, live auctions, reviews, notifications, and administrative management.
 
