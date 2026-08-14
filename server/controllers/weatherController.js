@@ -1,23 +1,84 @@
 // =====================================================
 // Weather Controller
 // =====================================================
-
-// Open-Meteo does not require an API key for normal
-// non-commercial use.
 //
-// Documentation:
-// https://open-meteo.com/en/docs
-// https://open-meteo.com/en/docs/geocoding-api
+// Open-Meteo weather service
+//
+// Weather data is cached in server memory to reduce
+// unnecessary requests and avoid exceeding API limits.
+//
+// Open-Meteo free API limits:
+// - < 10,000 requests/day
+// - 5,000 requests/hour
+// - 600 requests/minute
+//
 // =====================================================
+
+// =====================================================
+// Cache Configuration
+// =====================================================
+
+const WEATHER_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+const LOCATION_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+// =====================================================
+// In-Memory Caches
+// =====================================================
+
+const weatherCache = new Map();
+const locationCache = new Map();
 
 // =====================================================
 // Helpers
 // =====================================================
 
+// Validate coordinate
 const isValidCoordinate = (value, min, max) => {
   const number = Number(value);
 
   return Number.isFinite(number) && number >= min && number <= max;
+};
+
+// Round coordinates so tiny GPS differences use the
+// same weather cache.
+//
+// Example:
+// 25.495770833457254 -> 25.5
+// 81.86867508550188  -> 81.87
+//
+// This prevents every tiny GPS variation from creating
+// a new Open-Meteo request.
+const normalizeCoordinate = (value) => {
+  return Number(Number(value).toFixed(2));
+};
+
+// =====================================================
+// Cache Helpers
+// =====================================================
+
+const getCachedValue = (cache, key) => {
+  const cached = cache.get(key);
+
+  if (!cached) {
+    return null;
+  }
+
+  const isExpired = Date.now() - cached.timestamp > cached.ttl;
+
+  if (isExpired) {
+    cache.delete(key);
+    return null;
+  }
+
+  return cached.data;
+};
+
+const setCachedValue = (cache, key, data, ttl) => {
+  cache.set(key, {
+    data,
+    timestamp: Date.now(),
+    ttl,
+  });
 };
 
 // =====================================================
@@ -26,13 +87,17 @@ const isValidCoordinate = (value, min, max) => {
 //
 // GET /api/weather/search?query=Prayagraj
 //
-// Used to convert a location name into latitude +
-// longitude.
 // =====================================================
 
 const searchLocation = async (req, res) => {
   try {
-    const query = String(req.query.query || "").trim();
+    const query = String(req.query.query || "")
+      .trim()
+      .replace(/\s+/g, " ");
+
+    // =================================================
+    // Validate Search Query
+    // =================================================
 
     if (query.length < 2) {
       return res.status(400).json({
@@ -41,6 +106,32 @@ const searchLocation = async (req, res) => {
       });
     }
 
+    // =================================================
+    // Cache Key
+    // =================================================
+
+    const cacheKey = query.toLowerCase();
+
+    // =================================================
+    // Check Cache
+    // =================================================
+
+    const cachedLocations = getCachedValue(locationCache, cacheKey);
+
+    if (cachedLocations) {
+      console.log("Weather location cache hit:", query);
+
+      return res.status(200).json({
+        success: true,
+        locations: cachedLocations,
+        cached: true,
+      });
+    }
+
+    // =================================================
+    // Open-Meteo Geocoding URL
+    // =================================================
+
     const url = new URL("https://geocoding-api.open-meteo.com/v1/search");
 
     url.searchParams.set("name", query);
@@ -48,7 +139,11 @@ const searchLocation = async (req, res) => {
     url.searchParams.set("language", "en");
     url.searchParams.set("format", "json");
 
-    console.log("Weather location API URL:", url.toString());
+    console.log("Weather location API request:", query);
+
+    // =================================================
+    // Request Open-Meteo
+    // =================================================
 
     const response = await fetch(url);
 
@@ -56,9 +151,22 @@ const searchLocation = async (req, res) => {
 
     const responseText = await response.text();
 
-    console.log("Open-Meteo geocoding response:", responseText);
+    // =================================================
+    // Handle API Error
+    // =================================================
 
     if (!response.ok) {
+      console.error("Open-Meteo geocoding error:", responseText);
+
+      if (response.status === 429) {
+        return res.status(503).json({
+          success: false,
+          message:
+            "Weather location search is temporarily unavailable because the weather service rate limit has been reached. Please try again later.",
+          status: 429,
+        });
+      }
+
       return res.status(502).json({
         success: false,
         message: "Open-Meteo location service returned an error.",
@@ -67,7 +175,26 @@ const searchLocation = async (req, res) => {
       });
     }
 
-    const data = JSON.parse(responseText);
+    // =================================================
+    // Parse Response
+    // =================================================
+
+    let data;
+
+    try {
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error("Invalid Open-Meteo geocoding response:", error);
+
+      return res.status(502).json({
+        success: false,
+        message: "Invalid response received from weather location service.",
+      });
+    }
+
+    // =================================================
+    // Format Locations
+    // =================================================
 
     const locations = (data.results || []).map((location) => ({
       id: location.id,
@@ -80,9 +207,20 @@ const searchLocation = async (req, res) => {
       timezone: location.timezone || "",
     }));
 
+    // =================================================
+    // Store In Cache
+    // =================================================
+
+    setCachedValue(locationCache, cacheKey, locations, LOCATION_CACHE_TTL);
+
+    // =================================================
+    // Response
+    // =================================================
+
     return res.status(200).json({
       success: true,
       locations,
+      cached: false,
     });
   } catch (error) {
     console.error("Weather location search error:", error);
@@ -101,6 +239,7 @@ const searchLocation = async (req, res) => {
 // GET /api/weather?latitude=...&longitude=...
 //
 // Returns:
+//
 // - Current temperature
 // - Feels like temperature
 // - Humidity
@@ -111,6 +250,7 @@ const searchLocation = async (req, res) => {
 // - Sunrise
 // - Sunset
 // - 7-day forecast
+//
 // =====================================================
 
 const getWeather = async (req, res) => {
@@ -135,8 +275,35 @@ const getWeather = async (req, res) => {
       });
     }
 
-    const lat = Number(latitude);
-    const lon = Number(longitude);
+    // =================================================
+    // Normalize Coordinates
+    // =================================================
+
+    const lat = normalizeCoordinate(latitude);
+    const lon = normalizeCoordinate(longitude);
+
+    // =================================================
+    // Cache Key
+    // =================================================
+
+    const cacheKey = `${lat},${lon}`;
+
+    // =================================================
+    // Check Weather Cache
+    // =================================================
+
+    const cachedWeather = getCachedValue(weatherCache, cacheKey);
+
+    if (cachedWeather) {
+      console.log(`Weather cache hit: ${cacheKey}`);
+
+      return res.status(200).json({
+        ...cachedWeather,
+        cached: true,
+      });
+    }
+
+    console.log(`Weather cache miss: ${cacheKey}`);
 
     // =================================================
     // Open-Meteo URL
@@ -186,7 +353,7 @@ const getWeather = async (req, res) => {
     );
 
     // =================================================
-    // Units & Forecast Configuration
+    // Configuration
     // =================================================
 
     url.searchParams.set("forecast_days", "7");
@@ -196,26 +363,41 @@ const getWeather = async (req, res) => {
     url.searchParams.set("timezone", "auto");
 
     // =================================================
-    // Request Weather
+    // Request Open-Meteo
     // =================================================
 
-    console.log("Weather API URL:", url.toString());
+    console.log("Requesting Open-Meteo weather:", cacheKey);
 
     const response = await fetch(url);
 
-    console.log("Open-Meteo status:", response.status);
+    console.log("Open-Meteo weather status:", response.status);
 
-    // Read response as text first so we can see
-    // the actual Open-Meteo error if something fails.
     const responseText = await response.text();
-
-    console.log("Open-Meteo response:", responseText);
 
     // =================================================
     // Handle Open-Meteo Error
     // =================================================
 
     if (!response.ok) {
+      console.error("Open-Meteo weather error:", responseText);
+
+      // ===============================================
+      // Rate Limit
+      // ===============================================
+
+      if (response.status === 429) {
+        return res.status(503).json({
+          success: false,
+          message:
+            "Weather service is temporarily unavailable because the weather API rate limit has been reached. Please try again later.",
+          status: 429,
+        });
+      }
+
+      // ===============================================
+      // Other Upstream Errors
+      // ===============================================
+
       return res.status(502).json({
         success: false,
         message: "Open-Meteo weather service returned an error.",
@@ -228,13 +410,24 @@ const getWeather = async (req, res) => {
     // Parse Response
     // =================================================
 
-    const data = JSON.parse(responseText);
+    let data;
+
+    try {
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error("Invalid Open-Meteo weather response:", error);
+
+      return res.status(502).json({
+        success: false,
+        message: "Invalid response received from weather service.",
+      });
+    }
 
     // =================================================
-    // Send Weather Response
+    // Prepare Response
     // =================================================
 
-    return res.status(200).json({
+    const weatherResponse = {
       success: true,
 
       location: {
@@ -250,6 +443,25 @@ const getWeather = async (req, res) => {
       daily: data.daily || null,
 
       dailyUnits: data.daily_units || {},
+    };
+
+    // =================================================
+    // Store Weather In Cache
+    // =================================================
+
+    setCachedValue(weatherCache, cacheKey, weatherResponse, WEATHER_CACHE_TTL);
+
+    console.log(
+      `Weather cached for ${WEATHER_CACHE_TTL / 60000} minutes: ${cacheKey}`,
+    );
+
+    // =================================================
+    // Response
+    // =================================================
+
+    return res.status(200).json({
+      ...weatherResponse,
+      cached: false,
     });
   } catch (error) {
     console.error("Get weather error:", error);
