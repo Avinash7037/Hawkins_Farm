@@ -120,6 +120,31 @@ app.get("/", (req, res) => {
 });
 
 // =====================================================
+// AI Route Test
+// =====================================================
+//
+// Temporary endpoint to verify that the deployed backend
+// contains and registers the AI functionality.
+//
+// GET /api/ai/test
+//
+// Expected response:
+//
+// {
+//   "success": true,
+//   "message": "AI route is registered"
+// }
+//
+// =====================================================
+
+app.get("/api/ai/test", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "AI route is registered",
+  });
+});
+
+// =====================================================
 // API Routes
 // =====================================================
 
@@ -218,9 +243,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: process.env.CLIENT_URL || "http://localhost:5173",
-
     methods: ["GET", "POST"],
-
     credentials: true,
   },
 });
